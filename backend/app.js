@@ -1,0 +1,65 @@
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const sequelize = require('./config/database');
+const db = require('./models');
+
+
+const authRoutes = require('./routes/auth');
+const bookRoutes = require('./routes/books');
+const adminRoutes = require('./routes/admin');
+const readerRequestRoutes = require('./routes/readerRequest');
+const reservationsRoutes = require('./routes/reservations');
+const multimediaRoutes = require('./routes/multimedia');
+
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600
+}));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Логирование запросов
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// Маршруты
+app.use('/api/auth', authRoutes);
+app.use('/api/books', bookRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reader-requests', readerRequestRoutes);
+app.use('/api/reservations', reservationsRoutes);
+app.use('/api/multimedia', multimediaRoutes);
+
+
+// Обработка ошибок
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+});
+
+
+// Тестируем подключение к базе данных
+sequelize.authenticate()
+  .then(() => {
+    console.log('Подключение к базе данных установлено успешно.');
+    
+    // Синхронизируем модели с базой данных
+    return sequelize.sync({ alter: true });
+  })
+  .catch(err => {
+    console.error('Ошибка при подключении к базе данных:', err);
+  });
+
+
+module.exports = app;

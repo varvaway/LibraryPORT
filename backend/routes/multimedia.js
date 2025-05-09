@@ -1,0 +1,74 @@
+const express = require('express');
+const router = express.Router();
+const { userAuth, adminAuth } = require('../middleware/auth');
+const db = require('../models');
+
+// Получить все ресурсы
+router.get('/', async (req, res) => {
+  try {
+    const resources = await db.MultimediaResource.findAll({
+      attributes: ['id', 'title', 'description', 'type', 'url']
+    });
+    res.json(resources);
+  } catch (error) {
+    console.error('Ошибка при получении ресурсов:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Получить ресурс по ID
+router.get('/:id', async (req, res) => {
+  try {
+    const resource = await db.MultimediaResource.findByPk(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ message: 'Ресурс не найден' });
+    }
+    res.json(resource);
+  } catch (error) {
+    console.error('Ошибка при получении ресурса:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Создать новый ресурс (только админ)
+router.post('/', userAuth, adminAuth, async (req, res) => {
+  try {
+    const resource = await db.MultimediaResource.create(req.body);
+    res.status(201).json(resource);
+  } catch (error) {
+    console.error('Ошибка при создании ресурса:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Обновить ресурс (только админ)
+router.put('/:id', userAuth, adminAuth, async (req, res) => {
+  try {
+    const resource = await db.MultimediaResource.findByPk(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ message: 'Ресурс не найден' });
+    }
+    await resource.update(req.body);
+    res.json(resource);
+  } catch (error) {
+    console.error('Ошибка при обновлении ресурса:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Удалить ресурс (только админ)
+router.delete('/:id', userAuth, adminAuth, async (req, res) => {
+  try {
+    const resource = await db.MultimediaResource.findByPk(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ message: 'Ресурс не найден' });
+    }
+    await resource.destroy();
+    res.json({ message: 'Ресурс успешно удален' });
+  } catch (error) {
+    console.error('Ошибка при удалении ресурса:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+module.exports = router;
