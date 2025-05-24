@@ -1,55 +1,18 @@
-const express = require('express');
-const router = express.Router();
-const jwt = require('jsonwebtoken');
+//const express = require('express');
+//const router = express.Router();
+//const authController = require('../controllers/authController');
+//const authMiddleware = require('../middleware/auth');
 
-// Фейковый пользователь
-const fakeUser = {
-  КодПользователя: 1,
-  Имя: 'Варвара',
-  Фамилия: 'Кнороз',
-  Роль: 'Администратор',
-  ХэшПароля: 'wiwiwi'
-};
+// Публичные маршруты
+//router.post('/login', authController.login);
+//router.post('/register', authController.register);
 
-// Вход пользователя
-router.post('/login', (req, res) => {
-  try {
-    const { firstName, lastName, password } = req.body;
-    console.log('Попытка входа:', { firstName, lastName });
+// Защищенные маршруты (требуют авторизации)
+//router.get('/profile', authMiddleware, authController.profile);
+//router.put('/profile', authMiddleware, authController.updateProfile);
 
-    // Проверяем данные фейкового пользователя
-    if (firstName !== fakeUser.Имя || lastName !== fakeUser.Фамилия) {
-      console.log('Пользователь не найден');
-      return res.status(401).json({ message: 'Неверное имя, фамилия или пароль' });
-    }
+//module.exports = router;
 
-    if (password !== fakeUser.ХэшПароля) {
-      console.log('Неверный пароль');
-      return res.status(401).json({ message: 'Неверное имя, фамилия или пароль' });
-    }
 
-    // Создаем токен
-    const token = jwt.sign(
-      { id: fakeUser.КодПользователя },
-      'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    console.log('Успешный вход');
-
-    res.json({
-      token,
-      user: {
-        id: fakeUser.КодПользователя,
-        name: fakeUser.Имя,
-        surname: fakeUser.Фамилия,
-        role: fakeUser.Роль
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка при входе:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
-  }
-});
-
-module.exports = router;
+//sqlcmd -S MISS\SQLEXPRESS03\LibraryDB –E
+//sqlcmd -S MISS\SQLEXPRESS03 –U library_user –P StrongPassword123!

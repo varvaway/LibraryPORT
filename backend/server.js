@@ -1,18 +1,22 @@
 const app = require('./app');
 const sequelize = require('./config/database');
+const { exec } = require('child_process');
 
 const PORT = process.env.PORT || 3001;
 
-// Подключение к базе данных и запуск сервера
 sequelize.authenticate()
   .then(() => {
     console.log('Подключение к базе данных установлено успешно.');
-    return sequelize.sync({ alter: true });
-  })
-  .then(() => {
-    console.log('Модели синхронизированы с базой данных.');
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+    // Запуск миграций
+    exec('npx sequelize-cli db:migrate', (err, stdout, stderr) => {
+      if (err) {
+        console.error('Ошибка миграций:', err);
+        return;
+      }
+      console.log('Миграции выполнены успешно');
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+      });
     });
   })
   .catch(err => {

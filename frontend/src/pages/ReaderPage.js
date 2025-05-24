@@ -201,13 +201,12 @@ const ReaderPage = () => {
           'Authorization': `Bearer ${token}`
         };
 
-        // Пытаемся загрузить текущие брони
+
         try {
           const currentResponse = await axios.get('/api/reservations/current', { headers });
           setCurrentBooks(currentResponse.data);
         } catch (error) {
           if (error.response?.status === 404) {
-            // Если эндпоинт не существует, устанавливаем пустой массив
             setCurrentBooks([]);
           } else {
             throw error;

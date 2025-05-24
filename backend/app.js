@@ -4,6 +4,9 @@ const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
 const db = require('./models');
 
+// Порт сервера
+const PORT = process.env.PORT || 5000;
+
 
 const authRoutes = require('./routes/auth');
 const bookRoutes = require('./routes/books');
@@ -34,7 +37,7 @@ app.use((req, res, next) => {
 });
 
 // Маршруты
-app.use('/api/auth', authRoutes);
+//app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reader-requests', readerRequestRoutes);
@@ -44,8 +47,12 @@ app.use('/api/multimedia', multimediaRoutes);
 
 // Обработка ошибок
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+  console.error('Ошибка:', err.message);
+  console.error('Стек ошибки:', err.stack);
+  res.status(err.status || 500).json({
+    message: err.message || 'Внутренняя ошибка сервера',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
 });
 
 
@@ -57,9 +64,15 @@ sequelize.authenticate()
     // Синхронизируем модели с базой данных
     return sequelize.sync({ alter: true });
   })
+  .then(() => {
+    // Запускаем сервер
+    app.listen(PORT, () => {
+      console.log(`Сервер запущен на порту ${PORT}`);
+    });
+  })
   .catch(err => {
     console.error('Ошибка при подключении к базе данных:', err);
+    process.exit(1); // Завершаем процесс в случае ошибки
   });
-
 
 module.exports = app;
