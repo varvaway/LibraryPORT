@@ -5,7 +5,7 @@ const sequelize = require('./config/database');
 const db = require('./models');
 
 // Порт сервера
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 
 const authRoutes = require('./routes/auth');
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 });
 
 // Маршруты
-//app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reader-requests', readerRequestRoutes);
@@ -54,7 +54,6 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
 });
-
 
 // Тестируем подключение к базе данных
 sequelize.authenticate()

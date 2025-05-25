@@ -7,6 +7,7 @@ const Block = styled.div`
   padding: 32px;
   margin: 40px 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative;
 `;
 
 const Title = styled.h2`
@@ -14,21 +15,24 @@ const Title = styled.h2`
   color: ${({ theme }) => theme.colors.mahogany};
   font-size: 2.2rem;
   margin-bottom: 24px;
+  text-align: center;
 `;
 
 const InfoSection = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
+  padding-left: 50px;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    padding-left: 20px;
   }
 `;
 
 const ContactItem = styled.div`
-  margin-bottom: 16px;
-  font-size: 1.2rem;
+  margin-bottom: 24px;
+  font-size: 1.6rem;
 
   strong {
     display: block;
@@ -37,13 +41,28 @@ const ContactItem = styled.div`
   }
 `;
 
+const ConvertImage = styled.img`
+  position: absolute;
+  bottom: 32px;
+  right: 32px;
+  width: 240px;
+  height: auto;
+`;
+
 const SocialLink = styled.div`
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
   a {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     text-decoration: none;
     color: inherit;
+    font-size: 1.4rem;
 
     &:hover {
       opacity: 0.8;
@@ -51,8 +70,8 @@ const SocialLink = styled.div`
   }
 
   img {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     transition: opacity 0.2s;
   }
 `;
@@ -109,6 +128,7 @@ export default function ContactInfoBlock() {
           </ContactItem>
         </div>
       </InfoSection>
+      <ConvertImage src="/images/convert.png" alt="Convert" />
     </Block>
   );
 }

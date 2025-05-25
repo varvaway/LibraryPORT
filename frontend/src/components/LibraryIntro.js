@@ -15,7 +15,7 @@ const Title = styled.h1`
 
 const Description = styled.p`
   color: ${({ theme }) => theme.colors.darkGray};
-  font-size: 1.2rem;
+  font-size: 1.6rem;
   line-height: 1.6;
   max-width: 800px;
   margin: 0 auto;

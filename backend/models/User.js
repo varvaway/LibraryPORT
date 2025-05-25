@@ -1,5 +1,4 @@
 const { DataTypes } = require('sequelize');
-const bcrypt = require('bcryptjs');
 const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
@@ -24,10 +23,10 @@ const User = sequelize.define('User', {
     allowNull: false,
     field: 'ЭлектроннаяПочта'
   },
-  ХэшПароля: {
+  Пароль: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    field: 'ХэшПароля'
+    field: 'Пароль'
   },
   Роль: {
     type: DataTypes.STRING(50),
@@ -41,18 +40,7 @@ const User = sequelize.define('User', {
   }
 }, {
   tableName: 'Пользователи',
-  timestamps: false,
-  hooks: {
-    beforeSave: async (user) => {
-      if (user.changed('ХэшПароля')) {
-        user.ХэшПароля = await bcrypt.hash(user.ХэшПароля, 10);
-      }
-    }
-  }
+  timestamps: false
 });
-
-User.prototype.validPassword = function(password) {
-  return bcrypt.compareSync(password, this.ХэшПароля);
-};
 
 module.exports = User;

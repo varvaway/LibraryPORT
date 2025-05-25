@@ -19,8 +19,21 @@ const PolicyContent = styled.div`
   background: white;
   padding: 32px;
   border-radius: 12px;
-  max-width: 500px;
+  max-width: 600px;
   position: relative;
+
+  h3 {
+    font-family: ${({ theme }) => theme.fonts.heading};
+    color: ${({ theme }) => theme.colors.mahogany};
+    font-size: 2.1rem;
+    margin-bottom: 24px;
+  }
+
+  p {
+    font-size: 1.6rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
 `;
 
 const CloseButton = styled.button`
@@ -29,9 +42,11 @@ const CloseButton = styled.button`
   right: 12px;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 32px;
   cursor: pointer;
   color: ${({ theme }) => theme.colors.mahogany};
+  padding: 8px;
+  line-height: 1;
 `;
 
 // Стили для формы
@@ -74,7 +89,7 @@ const CheckboxLabel = styled.label`
   align-items: center;
   gap: 8px;
   margin: 16px 0;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
 
   input {
     width: 20px;
@@ -95,6 +110,7 @@ const SubmitButton = styled.button`
   border: none;
   border-radius: 8px;
   font-size: 1.2rem;
+  font-family: ${({ theme }) => theme.fonts.heading};
   cursor: pointer;
   transition: opacity 0.3s;
 
@@ -190,7 +206,7 @@ export default function BecomeReaderForm() {
   });
   
   const [showPolicy, setShowPolicy] = useState(false);
-  const COOLDOWN_TIME = 15 * 60; // 15 минут в секундах
+  const COOLDOWN_TIME = 15 * 60; 
   const MAX_REQUESTS = 10; // Максимальное количество запоминаемых заявок
 
   const [duplicateRequest, setDuplicateRequest] = useState({ show: false, timeLeft: null });
@@ -279,7 +295,7 @@ export default function BecomeReaderForm() {
     if (notification.message) {
       const timer = setTimeout(() => {
         setNotification({ message: '', success: false });
-      }, notification.success ? 8000 : 6000); // 8 секунд для успеха, 6 для ошибки
+      }, notification.success ? 8000 : 8000); // 8 секунд для успеха, 6 для ошибки
       return () => clearTimeout(timer);
     }
   }, [notification]);

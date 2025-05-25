@@ -12,6 +12,7 @@ const MapContainer = styled.div`
 const Title = styled.h2`
   font-family: ${({ theme }) => theme.fonts.heading};
   color: ${({ theme }) => theme.colors.mahogany};
+  font-size: 2.2rem;
   text-align: center;
   margin-bottom: 20px;
 `;
