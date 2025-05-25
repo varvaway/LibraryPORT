@@ -1,15 +1,17 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+const sequelize = require('../config/database');
 
 const ResourceCategory = sequelize.define('ResourceCategory', {
   КодРесурса: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    allowNull: false,
     field: 'КодРесурса',
   },
   КодКатегории: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    allowNull: false,
     field: 'КодКатегории',
   },
 }, {
@@ -17,4 +19,4 @@ const ResourceCategory = sequelize.define('ResourceCategory', {
   timestamps: false,
 });
 
-module.exports = ResourceCategory; 
+module.exports = ResourceCategory;

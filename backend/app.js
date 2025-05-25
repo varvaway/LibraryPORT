@@ -60,19 +60,15 @@ app.use((err, req, res, next) => {
 sequelize.authenticate()
   .then(() => {
     console.log('Подключение к базе данных установлено успешно.');
-    
-    // Синхронизируем модели с базой данных
-    return sequelize.sync({ alter: true });
-  })
-  .then(() => {
-    // Запускаем сервер
-    app.listen(PORT, () => {
-      console.log(`Сервер запущен на порту ${PORT}`);
-    });
   })
   .catch(err => {
     console.error('Ошибка при подключении к базе данных:', err);
     process.exit(1); // Завершаем процесс в случае ошибки
   });
+
+// Запускаем сервер
+app.listen(PORT, () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
+});
 
 module.exports = app;

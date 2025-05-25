@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+const sequelize = require('../config/database');
 
 const Author = sequelize.define('Author', {
   КодАвтора: {
@@ -9,17 +9,17 @@ const Author = sequelize.define('Author', {
     field: 'КодАвтора',
   },
   Имя: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: false,
     field: 'Имя',
   },
   Фамилия: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: false,
     field: 'Фамилия',
   },
   Биография: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
     field: 'Биография',
   },

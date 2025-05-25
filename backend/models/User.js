@@ -19,10 +19,25 @@ const User = sequelize.define('User', {
     allowNull: false,
     field: 'Фамилия'
   },
+  ЭлектроннаяПочта: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    field: 'ЭлектроннаяПочта'
+  },
   ХэшПароля: {
     type: DataTypes.STRING(255),
     allowNull: false,
     field: 'ХэшПароля'
+  },
+  Роль: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    field: 'Роль'
+  },
+  Телефон: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'Телефон'
   }
 }, {
   tableName: 'Пользователи',

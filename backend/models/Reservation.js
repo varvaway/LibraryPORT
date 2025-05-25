@@ -8,38 +8,19 @@ const Reservation = sequelize.define('Reservation', {
     autoIncrement: true,
     field: 'КодБронирования'
   },
-  КодКниги: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'КодКниги',
-    references: {
-      model: 'Книги',
-      key: 'КодКниги'
-    }
-  },
   КодПользователя: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'КодПользователя',
-    references: {
-      model: 'Пользователи',
-      key: 'КодПользователя'
-    }
+    field: 'КодПользователя'
   },
-  ДатаНачала: {
+  ДатаБронирования: {
     type: DataTypes.DATE,
     allowNull: false,
-    field: 'ДатаНачала'
-  },
-  ДатаОкончания: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    field: 'ДатаОкончания'
+    field: 'ДатаБронирования'
   },
   Статус: {
-    type: DataTypes.ENUM('активна', 'завершена', 'отменена'),
+    type: DataTypes.STRING(50),
     allowNull: false,
-    defaultValue: 'активна',
     field: 'Статус'
   }
 }, {

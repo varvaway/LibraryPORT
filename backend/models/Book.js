@@ -6,38 +6,33 @@ const Book = sequelize.define('Book', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    allowNull: false,
     field: 'КодКниги'
   },
   Название: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(200),
     allowNull: false,
     field: 'Название'
-  },
-  Автор: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: 'Автор'
-  },
-  Год: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'Год'
-  },
-  Жанр: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: 'Жанр'
   },
   Описание: {
     type: DataTypes.TEXT,
     allowNull: true,
     field: 'Описание'
   },
-  Доступна: {
-    type: DataTypes.BOOLEAN,
+  ГодИздания: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'ГодИздания'
+  },
+  ISBN: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    field: 'ISBN'
+  },
+  Статус: {
+    type: DataTypes.STRING(50),
     allowNull: false,
-    defaultValue: true,
-    field: 'Доступна'
+    field: 'Статус'
   }
 }, {
   tableName: 'Книги',

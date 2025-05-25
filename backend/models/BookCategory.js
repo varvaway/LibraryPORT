@@ -1,15 +1,17 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+const sequelize = require('../config/database');
 
 const BookCategory = sequelize.define('BookCategory', {
   КодКниги: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    allowNull: false,
     field: 'КодКниги',
   },
   КодКатегории: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    allowNull: false,
     field: 'КодКатегории',
   },
 }, {
@@ -17,4 +19,4 @@ const BookCategory = sequelize.define('BookCategory', {
   timestamps: false,
 });
 
-module.exports = BookCategory; 
+module.exports = BookCategory;

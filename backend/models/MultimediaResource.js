@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+const sequelize = require('../config/database');
 
 const MultimediaResource = sequelize.define('MultimediaResource', {
   КодРесурса: {
@@ -9,22 +9,22 @@ const MultimediaResource = sequelize.define('MultimediaResource', {
     field: 'КодРесурса',
   },
   Название: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(200),
     allowNull: false,
     field: 'Название',
   },
   Описание: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
     field: 'Описание',
   },
   Тип: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(50),
     allowNull: false,
     field: 'Тип',
   },
   Ссылка: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
     field: 'Ссылка',
   },

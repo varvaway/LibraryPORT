@@ -1,15 +1,17 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+const sequelize = require('../config/database');
 
 const BookAuthor = sequelize.define('BookAuthor', {
   КодКниги: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    allowNull: false,
     field: 'КодКниги',
   },
   КодАвтора: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    allowNull: false,
     field: 'КодАвтора',
   },
 }, {
@@ -17,4 +19,4 @@ const BookAuthor = sequelize.define('BookAuthor', {
   timestamps: false,
 });
 
-module.exports = BookAuthor; 
+module.exports = BookAuthor;

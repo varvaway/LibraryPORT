@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+const sequelize = require('../config/database');
 
 const Category = sequelize.define('Category', {
   КодКатегории: {
@@ -9,12 +9,12 @@ const Category = sequelize.define('Category', {
     field: 'КодКатегории',
   },
   Название: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: false,
     field: 'Название',
   },
   Описание: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
     field: 'Описание',
   },

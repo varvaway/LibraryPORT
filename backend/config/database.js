@@ -45,6 +45,7 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, proces
       trustServerCertificate: false
     }
   },
+  sync: false,
   logging: console.log
 });
 
