@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { User } = require('../models');
 require('dotenv').config();
 
@@ -21,7 +22,7 @@ exports.login = async (req, res) => {
     }
 
     //  Поиск пользователя
-    console.log('Запрос на поиск пользователя:', { Имя: firstName, Фамилия: lastName });
+    console.log('Запрос на поиск пользователя:', { 'Имя': firstName, 'Фамилия': lastName });
     const user = await User.findOne({
       where: {
         Имя: firstName,
@@ -33,10 +34,10 @@ exports.login = async (req, res) => {
     if (user) {
       console.log('Данные пользователя:', {
         id: user.КодПользователя,
-        Имя: user.Имя,
-        Фамилия: user.Фамилия,
-        Роль: user.Роль,
-        Пароль: user.Пароль
+        'Имя': user.Имя,
+        'Фамилия': user.Фамилия,
+        'Роль': user.Роль,
+        'ХэшПароля': user.ХэшПароля
       });
     }
 
@@ -51,10 +52,13 @@ exports.login = async (req, res) => {
 
     // Проверка пароля
     console.log('Начинаем проверку пароля');
-    console.log('Введенный пароль:', password);
-    console.log('Пароль в базе:', user.Пароль);
+    console.log('Введенный пароль:', password, 'Длина:', password.length);
+    console.log('Пароль в базе:', user.ХэшПароля, 'Длина:', user.ХэшПароля.length);
+    console.log('Коды символов введенного пароля:', Array.from(password).map(c => c.charCodeAt(0)));
+    console.log('Коды символов пароля в базе:', Array.from(user.ХэшПароля).map(c => c.charCodeAt(0)));
     
-    if (password !== user.Пароль) {
+    // Прямое сравнение паролей, так как они не хешированы
+    if (password !== user.ХэшПароля) {
       console.log('Ошибка: Неверный пароль');
       return res.status(401).json({
         success: false,
@@ -88,9 +92,20 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error('Ошибка входа:', error);
+    console.error('Детали ошибки:', {
+      name: error.name,
+      message: error.message,
+      sql: error.sql,
+      parameters: error.parameters,
+      parent: error.parent ? {
+        name: error.parent.name,
+        message: error.parent.message,
+        code: error.parent.code
+      } : null
+    });
     res.status(500).json({
       success: false,
-      message: 'Ошибка сервера'
+      message: 'Ошибка сервера: ' + error.message
     });
   }
 };
@@ -113,12 +128,15 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Хешируем пароль перед сохранением
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
     // Создание нового пользователя
     const user = await User.create({
       Имя: firstName,
       Фамилия: lastName,
       ЭлектроннаяПочта: email,
-      ХэшПароля: password,
+      ХэшПароля: hashedPassword,
       Роль: 'читатель' // По умолчанию новый пользователь - читатель
     });
 

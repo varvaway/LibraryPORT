@@ -23,10 +23,10 @@ const User = sequelize.define('User', {
     allowNull: false,
     field: 'ЭлектроннаяПочта'
   },
-  Пароль: {
+  ХэшПароля: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    field: 'Пароль'
+    field: 'ХэшПароля'
   },
   Роль: {
     type: DataTypes.STRING(50),
@@ -40,7 +40,11 @@ const User = sequelize.define('User', {
   }
 }, {
   tableName: 'Пользователи',
-  timestamps: false
+  // Указываем схему и другие настройки
+  schema: 'dbo',
+  timestamps: false,
+  schema: 'dbo',
+  freezeTableName: true
 });
 
 module.exports = User;

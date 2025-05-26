@@ -7,11 +7,20 @@ const db = require('../models');
 router.get('/', async (req, res) => {
   try {
     const resources = await db.MultimediaResource.findAll({
-      attributes: ['id', 'title', 'description', 'type', 'url']
+      attributes: ['КодРесурса', 'Название', 'Описание', 'Тип', 'Ссылка']
     });
-    res.json(resources);
+    // Map Russian field names to English for the API response
+    const mappedResources = resources.map(resource => ({
+      id: resource.КодРесурса,
+      title: resource.Название,
+      description: resource.Описание,
+      type: resource.Тип,
+      url: resource.Ссылка
+    }));
+    res.json(mappedResources);
   } catch (error) {
     console.error('Ошибка при получении ресурсов:', error);
+    console.error('Детали ошибки:', error.message, error.stack);
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 });

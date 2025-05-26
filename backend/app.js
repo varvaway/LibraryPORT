@@ -4,6 +4,18 @@ const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
 const db = require('./models');
 
+// Инициализация базы данных
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ Подключение к базе данных установлено успешно!');
+  })
+  .catch(err => {
+    console.error('❌ Ошибка при подключении к базе данных:');
+    console.error('Сообщение:', err.message);
+    console.error('Полная ошибка:', err);
+    process.exit(1);
+  });
+
 // Порт сервера
 const PORT = process.env.PORT || 3001;
 
