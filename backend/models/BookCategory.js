@@ -17,6 +17,8 @@ const BookCategory = sequelize.define('BookCategory', {
 }, {
   tableName: 'КнигиКатегории',
   timestamps: false,
+  schema: 'dbo',
+  freezeTableName: true
 });
 
 module.exports = BookCategory;

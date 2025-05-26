@@ -32,7 +32,8 @@ const Book = sequelize.define('Book', {
 }, {
   tableName: 'Книги',
   timestamps: false,
-  schema: 'dbo'
+  schema: 'dbo',
+  freezeTableName: true
 });
 
 module.exports = Book;

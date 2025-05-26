@@ -6,6 +6,9 @@ const auth = require('../middleware/auth');
 // Получить все книги (публичный доступ)
 router.get('/', booksController.getAllBooks);
 
+// Получить все категории (публичный доступ)
+router.get('/categories', booksController.getAllCategories);
+
 // Получить книгу по ID (публичный доступ)
 router.get('/:id', booksController.getBookById);
 

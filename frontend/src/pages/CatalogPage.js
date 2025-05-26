@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
+import Modal from 'react-modal';
 
 const CatalogContainer = styled.div`
   padding: 2rem;
@@ -14,6 +15,55 @@ const CatalogContainer = styled.div`
 const Sidebar = styled.div`
   width: 350px;
   flex-shrink: 0;
+`;
+
+const Container = styled.div`
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 2rem;
+  
+  h1 {
+    color: ${({ theme }) => theme.colors.mahogany};
+    margin-bottom: 2rem;
+  }
+`;
+
+const CategoriesContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  width: 300px;
+`;
+
+const CategoryButton = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  color: ${props => props.$active ? props.theme.colors.mahogany : props.theme.colors.darkGray};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: ${props => props.theme.colors.mahogany};
+  }
+  
+  img {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.5rem;
+    opacity: ${props => props.$active ? 1 : 0.7};
+  }
+  
+  span {
+    font-size: 0.9rem;
+    font-weight: ${props => props.$active ? 'bold' : 'normal'};
+  }
 `;
 
 const MainContent = styled.div`
@@ -101,6 +151,13 @@ const BookCard = styled.div`
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  ${props => props.$expanded && `
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  `}
   
   h3 {
     color: ${({ theme }) => theme.colors.mahogany};
@@ -112,6 +169,13 @@ const BookCard = styled.div`
     color: ${({ theme }) => theme.colors.darkGray};
     margin: 0.25rem 0;
     font-size: 1rem;
+  }
+  
+  .description {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid ${({ theme }) => theme.colors.lightGray};
+    display: ${props => props.$expanded ? 'block' : 'none'};
   }
 `;
 
@@ -142,30 +206,8 @@ const Button = styled.button`
   }
 `;
 
-const Modal = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  max-width: 400px;
-  width: 90%;
-  text-align: center;
-`;
-
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-`;
+// Устанавливаем корневой элемент для модальных окон
+Modal.setAppElement('#root');
 
 const AddButton = styled(Button)`
   position: fixed;
@@ -175,25 +217,47 @@ const AddButton = styled(Button)`
   font-size: 1.1rem;
 `;
 
+const modalStyles = {
+  content: {
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+    maxWidth: '400px',
+    width: '90%',
+  },
+  overlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+};
+
 const CatalogPage = () => {
   const [books, setBooks] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-  const [selectedBook, setSelectedBook] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [expandedBookId, setExpandedBookId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const isAdmin = user?.role === 'Администратор';
+  const isAdmin = user?.role === 'admin';
   
-  const categories = [
-    { id: 1, name: 'Категория 1', icon: '/ic_1.png' },
-    { id: 2, name: 'Категория 2', icon: '/ic_2.png' },
-    { id: 3, name: 'Категория 3', icon: '/ic_3png.png' },
-    { id: 4, name: 'Категория 4', icon: '/ic_4.png' },
-    { id: 5, name: 'Категория 5', icon: '/ic_5.png' },
-  ];
+  const filteredBooks = books.filter(book => 
+    (!searchQuery || 
+      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.author.toLowerCase().includes(searchQuery.toLowerCase())
+    ) &&
+    (!selectedCategory || book.categoryId === selectedCategory)
+  );
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -205,13 +269,22 @@ const CatalogPage = () => {
       }
     };
 
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('/api/categories');
+        setCategories(response.data);
+      } catch (error) {
+        console.error('Ошибка при загрузке категорий:', error);
+      }
+    };
+
     fetchBooks();
+    fetchCategories();
   }, []);
 
   const handleReserve = async (book) => {
     try {
       await axios.post('/api/reservations', { bookId: book.id });
-      setSelectedBook(book);
       setModalMessage(`Вы забронировали книгу "${book.title}" (${book.author}). Приходите за ней до конца рабочего дня.`);
       setShowModal(true);
     } catch (error) {
@@ -243,30 +316,23 @@ const CatalogPage = () => {
   };
 
   return (
-    <CatalogContainer>
-      <Sidebar>
-        <Title>Категории</Title>
-        <CategoryList>
-          {categories.map(category => (
-            <CategoryItem
+    <Container>
+      <div>
+        <h1>Каталог книг</h1>
+        <CategoriesContainer>
+          {categories.map((category) => (
+            <CategoryButton 
               key={category.id}
               onClick={() => setSelectedCategory(category.id === selectedCategory ? null : category.id)}
+              $active={category.id === selectedCategory}
             >
-              <img src={category.icon} alt={category.name} />
+              <img src={`/ic_${category.id}.png`} alt={category.name} />
               <span>{category.name}</span>
-            </CategoryItem>
+            </CategoryButton>
           ))}
-        </CategoryList>
-        {isAdmin && (
-          <Button
-            style={{ marginTop: '1rem', width: '100%' }}
-            onClick={() => console.log('Edit categories')}
-          >
-            Изменить категории
-          </Button>
-        )}
-      </Sidebar>
-      
+        </CategoriesContainer>
+      </div>
+
       <MainContent>
         <SearchBar>
           <input
@@ -275,57 +341,46 @@ const CatalogPage = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button onClick={() => {}}>Поиск</button>
         </SearchBar>
-      
-        <BooksGrid>
-          {books
-            .filter(book => 
-              (!searchQuery || 
-                book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                book.author.toLowerCase().includes(searchQuery.toLowerCase())
-              ) &&
-              (!selectedCategory || book.categoryId === selectedCategory)
-            )
-            .map(book => (
-              <BookCard key={book.id}>
-                <h3>{book.title}</h3>
-                <p>Автор: {book.author}</p>
-                <p>Год издания: {book.year}</p>
-                <p>Жанр: {book.genre}</p>
-                <ButtonGroup>
-                  {isAdmin ? (
-                    <>
-                      <Button onClick={() => handleEdit(book)}>Редактировать</Button>
-                      <Button onClick={() => handleDelete(book)}>Удалить</Button>
-                    </>
-                  ) : (
-                    user ? (
-                      <Button $primary onClick={() => handleReserve(book)}>Забронировать</Button>
-                    ) : null
-                  )}
-                </ButtonGroup>
-              </BookCard>
-            ))}
-        </BooksGrid>
 
-        {isAdmin && (
-          <AddButton $primary onClick={handleAdd}>
-            Добавить новую книгу
-          </AddButton>
-        )}
+        <BooksGrid>
+          {filteredBooks.map((book) => (
+            <BookCard 
+              key={book.id}
+              onClick={() => setExpandedBookId(book.id === expandedBookId ? null : book.id)}
+              $expanded={book.id === expandedBookId}
+            >
+              <h3>{book.title}</h3>
+              <p>Автор: {book.author}</p>
+              <p>Год: {book.year}</p>
+              {book.id === expandedBookId && (
+                <div className="description">
+                  <p>{book.description}</p>
+                </div>
+              )}
+              <ButtonGroup>
+                <Button onClick={(e) => {
+                  e.stopPropagation();
+                  handleReserve(book);
+                }}>
+                  Забронировать
+                </Button>
+              </ButtonGroup>
+            </BookCard>
+          ))}
+        </BooksGrid>
       </MainContent>
 
-      {showModal && (
-        <>
-          <Overlay onClick={() => setShowModal(false)} />
-          <Modal>
-            <p>{modalMessage}</p>
-            <Button $primary onClick={() => setShowModal(false)}>OK</Button>
-          </Modal>
-        </>
-      )}
-    </CatalogContainer>
+      <Modal
+        isOpen={showModal}
+        onRequestClose={() => setShowModal(false)}
+        contentLabel="Сообщение"
+        style={modalStyles}
+      >
+        <h2>{modalMessage}</h2>
+        <Button onClick={() => setShowModal(false)}>Закрыть</Button>
+      </Modal>
+    </Container>
   );
 };
 

@@ -11,5 +11,6 @@ router.post('/register', authController.register);
 router.get('/profile', userAuth, authController.profile);
 router.put('/profile', userAuth, authController.updateProfile);
 
-module.exports = router;
+//sqlcmd -S MISS\SQLEXPRESS03\LibraryDB –E
+//sqlcmd -S MISS\SQLEXPRESS03 –U library_user –P StrongPassword123!
 module.exports = router;

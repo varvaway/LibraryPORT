@@ -26,6 +26,8 @@ const Author = sequelize.define('Author', {
 }, {
   tableName: 'Авторы',
   timestamps: false,
+  schema: 'dbo',
+  freezeTableName: true
 });
 
 module.exports = Author; 

@@ -1,4 +1,4 @@
-const { Book, Author, Reservation } = require('../models');
+const { Book, Author, Category, BookAuthor, BookCategory } = require('../models');
 const { Op } = require('sequelize');
 
 // Контроллер для работы с книгами
@@ -6,17 +6,38 @@ const { Op } = require('sequelize');
 // Получить все книги
 const getAllBooks = async (req, res) => {
   try {
-    const books = await Book.findAll({ raw: true });
-    const formattedBooks = books.map(book => ({
-      id: book.КодКниги,
-      title: book.Название,
-      description: book.Описание,
-      year: book.ГодИздания,
-      isbn: book.ISBN,
-      status: book.Статус,
-      author: 'Неизвестный автор', // Временно, пока не реализованы связи с авторами
-      genre: 'Без категории' // Временно, пока не реализованы категории
-    }));
+    const books = await Book.findAll({
+      include: [
+        {
+          model: Author,
+          through: BookAuthor,
+          attributes: ['Имя', 'Фамилия']
+        },
+        {
+          model: Category,
+          through: BookCategory,
+          attributes: ['КодКатегории', 'Название']
+        }
+      ]
+    });
+
+    const formattedBooks = books.map(book => {
+      const author = book.Authors && book.Authors[0];
+      const category = book.Categories && book.Categories[0];
+      
+      return {
+        id: book.КодКниги,
+        title: book.Название,
+        description: book.Описание,
+        year: book.ГодИздания,
+        isbn: book.ISBN,
+        status: book.Статус,
+        categoryId: category ? category.КодКатегории : null,
+        categoryName: category ? category.Название : null,
+        author: author ? `${author.Имя} ${author.Фамилия}` : 'Неизвестный автор'
+      };
+    });
+
     res.json(formattedBooks);
   } catch (error) {
     console.error('Ошибка:', error);
@@ -254,11 +275,33 @@ exports.getReservationHistory = async (req, res) => {
   }
 };
 
+// Получить все категории
+const getAllCategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({
+      attributes: ['КодКатегории', 'Название'],
+      order: [['КодКатегории', 'ASC']]
+    });
+
+    const formattedCategories = categories.map(category => ({
+      id: category.КодКатегории,
+      name: category.Название,
+      icon: `/ic_${category.КодКатегории}.png`
+    }));
+
+    res.json(formattedCategories);
+  } catch (error) {
+    console.error('Ошибка:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllBooks,
   getBookById,
   createBook,
   updateBook,
   deleteBook,
-  reserveBook
+  reserveBook,
+  getAllCategories
 };

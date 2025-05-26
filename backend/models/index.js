@@ -14,12 +14,12 @@ const MultimediaResource = require('./MultimediaResource');
 const ResourceCategory = require('./ResourceCategory');
 
 // Книга <-> Автор
-Book.belongsToMany(Author, { through: 'КнигиАвторы', foreignKey: 'КодКниги', otherKey: 'КодАвтора' });
-Author.belongsToMany(Book, { through: 'КнигиАвторы', foreignKey: 'КодАвтора', otherKey: 'КодКниги' });
+Book.belongsToMany(Author, { through: BookAuthor, foreignKey: 'КодКниги', otherKey: 'КодАвтора' });
+Author.belongsToMany(Book, { through: BookAuthor, foreignKey: 'КодАвтора', otherKey: 'КодКниги' });
 
 // Книга <-> Категория
-Book.belongsToMany(Category, { through: 'КнигиКатегории', foreignKey: 'КодКниги', otherKey: 'КодКатегории' });
-Category.belongsToMany(Book, { through: 'КнигиКатегории', foreignKey: 'КодКатегории', otherKey: 'КодКниги' });
+Book.belongsToMany(Category, { through: BookCategory, foreignKey: 'КодКниги', otherKey: 'КодКатегории' });
+Category.belongsToMany(Book, { through: BookCategory, foreignKey: 'КодКатегории', otherKey: 'КодКниги' });
 
 // Книга <-> Бронирование (через ЭлементыБронирования)
 Book.belongsToMany(Reservation, { through: ReservationItem, foreignKey: 'КодКниги', otherKey: 'КодБронирования' });

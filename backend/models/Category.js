@@ -21,6 +21,8 @@ const Category = sequelize.define('Category', {
 }, {
   tableName: 'Категории',
   timestamps: false,
+  schema: 'dbo',
+  freezeTableName: true
 });
 
 module.exports = Category; 

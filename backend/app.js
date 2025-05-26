@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3001;
 
 const authRoutes = require('./routes/auth');
 const bookRoutes = require('./routes/books');
+const categoryRoutes = require('./routes/categories');
 const adminRoutes = require('./routes/admin');
 const readerRequestRoutes = require('./routes/readerRequest');
 const reservationsRoutes = require('./routes/reservations');
@@ -39,6 +40,7 @@ app.use((req, res, next) => {
 // Маршруты
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reader-requests', readerRequestRoutes);
 app.use('/api/reservations', reservationsRoutes);
@@ -55,19 +57,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Тестируем подключение к базе данных
-sequelize.authenticate()
-  .then(() => {
-    console.log('Подключение к базе данных установлено успешно.');
-  })
-  .catch(err => {
-    console.error('Ошибка при подключении к базе данных:', err);
-    process.exit(1); // Завершаем процесс в случае ошибки
-  });
 
-// Запускаем сервер
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-});
 
 module.exports = app;
