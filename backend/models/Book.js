@@ -1,3 +1,4 @@
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -6,37 +7,32 @@ const Book = sequelize.define('Book', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-    allowNull: false,
     field: 'КодКниги'
   },
   Название: {
-    type: DataTypes.STRING(200),
-    allowNull: false,
+    type: DataTypes.STRING,
     field: 'Название'
   },
   Описание: {
     type: DataTypes.TEXT,
-    allowNull: true,
     field: 'Описание'
   },
   ГодИздания: {
     type: DataTypes.INTEGER,
-    allowNull: true,
     field: 'ГодИздания'
   },
   ISBN: {
-    type: DataTypes.STRING(20),
-    allowNull: true,
+    type: DataTypes.STRING,
     field: 'ISBN'
   },
   Статус: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
+    type: DataTypes.STRING,
     field: 'Статус'
   }
 }, {
   tableName: 'Книги',
-  timestamps: false
+  timestamps: false,
+  schema: 'dbo'
 });
 
 module.exports = Book;

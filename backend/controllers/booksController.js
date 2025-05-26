@@ -1,4 +1,4 @@
-const { Book, Reservation } = require('../models');
+const { Book, Author, Reservation } = require('../models');
 const { Op } = require('sequelize');
 
 // Контроллер для работы с книгами
@@ -6,25 +6,21 @@ const { Op } = require('sequelize');
 // Получить все книги
 const getAllBooks = async (req, res) => {
   try {
-    const books = await Book.findAll({
-      attributes: ['КодКниги', 'Название', 'Автор', 'Год', 'Жанр', 'Описание', 'Доступна']
-    });
-    
-    // Преобразуем данные в нужный формат
+    const books = await Book.findAll({ raw: true });
     const formattedBooks = books.map(book => ({
       id: book.КодКниги,
       title: book.Название,
-      author: book.Автор,
-      year: book.Год,
-      genre: book.Жанр,
       description: book.Описание,
-      available: book.Доступна
+      year: book.ГодИздания,
+      isbn: book.ISBN,
+      status: book.Статус,
+      author: 'Неизвестный автор', // Временно, пока не реализованы связи с авторами
+      genre: 'Без категории' // Временно, пока не реализованы категории
     }));
-    
     res.json(formattedBooks);
   } catch (error) {
-    console.error('Ошибка при получении книг:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    console.error('Ошибка:', error);
+    res.status(500).json({ message: error.message });
   }
 };
 
