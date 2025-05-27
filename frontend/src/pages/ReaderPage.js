@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from '../utils/axios';
-import { useTheme } from 'styled-components'; // добавляем импорт хука useTheme
+import { useTheme } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 const ReaderContainer = styled.div`
   padding: 2rem;
@@ -170,7 +171,8 @@ const SuccessMessage = styled.div`
 `;
 
 const ReaderPage = () => {
-  const theme = useTheme(); // добавляем строку для доступа к теме
+  const theme = useTheme();
+  const navigate = useNavigate();
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState({ ...user });
@@ -181,7 +183,15 @@ const ReaderPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const loadUserProfile = async () => {
+    const checkAuthAndLoadProfile = async () => {
+      const token = localStorage.getItem('token');
+      const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+      
+      if (!token || !storedUser || storedUser.role === 'Администратор') {
+        navigate('/');
+        return;
+      }
+
       try {
         const response = await axios.get('/api/auth/profile');
         const userData = response.data;
@@ -189,10 +199,18 @@ const ReaderPage = () => {
         localStorage.setItem('user', JSON.stringify(userData));
       } catch (error) {
         console.error('Ошибка при загрузке профиля:', error);
-        setError('Ошибка при загрузке профиля');
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/');
+        }
       }
     };
     
+    checkAuthAndLoadProfile();
+  }, [navigate]);
+  
+  useEffect(() => {
     const loadBooks = async () => {
       try {
         setIsLoading(true);

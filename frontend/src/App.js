@@ -12,9 +12,15 @@ import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
 import AdminPage from './pages/AdminPage';
 import ReaderPage from './pages/ReaderPage';
+import ReadersPage from './pages/ReadersPage';
+import ReaderDetailsPage from './pages/ReaderDetailsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import CatalogPage from './pages/CatalogPage';
 import MultimediaPage from './pages/MultimediaPage';
+import BooksPage from './pages/BooksPage';
+import ReservationsPage from './pages/ReservationsPage';
+import LoginPage from './pages/LoginPage';
+import ReaderProfilePage from './pages/ReaderProfilePage';
 
 function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -62,10 +68,26 @@ function App() {
                 } 
               />
               <Route 
+                path="/readers" 
+                element={
+                  <ProtectedRoute requiredRole="Администратор">
+                    <ReadersPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/reader" 
                 element={
                   <ProtectedRoute requiredRole="Пользователь">
                     <ReaderPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute requiredRole="Пользователь">
+                    <ReaderProfilePage />
                   </ProtectedRoute>
                 } 
               />

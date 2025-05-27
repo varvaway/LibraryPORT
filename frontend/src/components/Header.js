@@ -64,10 +64,23 @@ const Button = styled.button`
   transition: all 0.2s;
   background-color: transparent;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  img {
+    width: 20px;
+    height: 20px;
+    filter: invert(1);
+  }
   
   &:hover {
     background-color: white;
     color: ${({ theme }) => theme.colors.mahogany};
+    
+    img {
+      filter: none;
+    }
   }
 `;
 
@@ -83,9 +96,49 @@ const UserInfo = styled.div`
   }
 `;
 
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const Dialog = styled.div`
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  width: 400px;
+  text-align: center;
+
+  h3 {
+    color: #6b4423;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+  }
+
+  div {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 25px;
+  }
+
+  button {
+    padding: 10px 25px;
+    font-size: 1.1em;
+  }
+`;
+
 const Header = ({ onLoginClick }) => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -94,40 +147,75 @@ const Header = ({ onLoginClick }) => {
     window.location.reload();
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    handleLogout();
+    setShowLogoutConfirm(false);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
   const goHome = () => {
     navigate('/');
   };
 
   return (
-    <HeaderContainer>
-      <HeaderContent>
-        <Logo onClick={goHome}>
-          <img src={logo} alt="Библиотека" />
-          <span>Библиотека</span>
-        </Logo>
-        
-        <Navigation>
-          <NavLink to="/catalog">Каталог</NavLink>
-          <NavLink to="/multimedia">Мультимедийные ресурсы</NavLink>
-        </Navigation>
+    <>
+      <HeaderContainer>
+        <HeaderContent>
+          <Logo onClick={goHome}>
+            <img src={logo} alt="Библиотека" />
+            <span>Библиотека</span>
+          </Logo>
+          
+          <Navigation>
+            <NavLink to="/catalog">Каталог</NavLink>
+            <NavLink to="/multimedia">Мультимедийные ресурсы</NavLink>
+          </Navigation>
 
-        <AuthSection>
-          {user ? (
-            <UserInfo>
-              <span>{user.name} {user.surname}</span>
-              {user.role === 'Администратор' ? (
-                <NavLink to="/admin">Панель администратора</NavLink>
-              ) : (
-                <NavLink to="/reader">Личный кабинет</NavLink>
-              )}
-              <Button onClick={handleLogout}>Выйти</Button>
-            </UserInfo>
-          ) : (
-            <Button onClick={onLoginClick}>Войти</Button>
-          )}
-        </AuthSection>
-      </HeaderContent>
-    </HeaderContainer>
+          <AuthSection>
+            {user ? (
+              <UserInfo>
+                <span>{user.name} {user.surname}</span>
+                {user.role === 'Администратор' ? (
+                  <NavLink to="/admin">Панель администратора</NavLink>
+                ) : (
+                  <NavLink to="/profile">Личный кабинет</NavLink>
+                )}
+                <Button onClick={handleLogoutClick}>
+                  <img 
+                    src={`${process.env.PUBLIC_URL}/icons/${user.role === 'Администратор' ? 'admin.png' : 'reader.png'}`} 
+                    alt={user.role === 'Администратор' ? 'Администратор' : 'Читатель'} 
+                  />
+                  Выйти
+                </Button>
+              </UserInfo>
+            ) : (
+              <Button onClick={onLoginClick}>
+                <img src={`${process.env.PUBLIC_URL}/icons/open-book.png`} alt="Войти" />
+                Войти
+              </Button>
+            )}
+          </AuthSection>
+        </HeaderContent>
+      </HeaderContainer>
+      {showLogoutConfirm && (
+        <Overlay>
+          <Dialog>
+            <h3>Вы точно хотите выйти?</h3>
+            <div>
+              <Button style={{ background: 'white', color: '#442727', borderColor: 'white' }} onClick={handleConfirmLogout}>Да</Button>
+              <Button style={{ background: '#442727', color: 'white', borderColor: '#442727' }} onClick={handleCancelLogout}>Нет</Button>
+            </div>
+          </Dialog>
+        </Overlay>
+      )}
+    </>
   );
 };
 

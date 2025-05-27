@@ -7,7 +7,7 @@ const db = require('./models');
 // Инициализация базы данных
 sequelize.authenticate()
   .then(() => {
-    console.log('✅ Подключение к базе данных установлено успешно! Ура!');
+    console.log('✅ Подключение к базе данных установлено успешно!');
   })
   .catch(err => {
     console.error('❌ Ошибка при подключении к базе данных:');
@@ -27,6 +27,8 @@ const adminRoutes = require('./routes/admin');
 const readerRequestRoutes = require('./routes/readerRequest');
 const reservationsRoutes = require('./routes/reservations');
 const multimediaRoutes = require('./routes/multimedia');
+const readersRoutes = require('./routes/readers');
+
 
 const app = express();
 
@@ -57,6 +59,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reader-requests', readerRequestRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/multimedia', multimediaRoutes);
+app.use('/api/readers', readersRoutes);
+
 
 
 // Обработка ошибок

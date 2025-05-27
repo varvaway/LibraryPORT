@@ -2,30 +2,32 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const userJson = localStorage.getItem('user');
-  const user = userJson ? JSON.parse(userJson) : null;
+  console.log('ProtectedRoute: проверка доступа');
+  console.log('RequiredRole:', requiredRole);
   
-  console.log('ProtectedRoute проверка:', {
-    userJson,
-    user,
-    requiredRole
-  });
+  const userStr = localStorage.getItem('user');
+  console.log('User from localStorage:', userStr);
   
-  if (!user || (!user.role && !user.Роль)) {
-    console.log('Нет пользователя или роли:', user);
+  const user = JSON.parse(userStr || 'null');
+  console.log('Parsed user:', user);
+  
+  if (!user) {
+    console.log('Нет пользователя, редирект на /');
     return <Navigate to="/" />;
   }
 
-  // Проверяем роль с учетом разных возможных форматов
-  const userRole = user.role || user.Роль;
-  console.log('Сравнение ролей:', {
-    userRole,
-    requiredRole,
-    равны: userRole === requiredRole
-  });
-  
-  if (userRole !== requiredRole) {
-    console.log('Неверная роль:', userRole, 'требуется:', requiredRole);
+  // Проверяем роль пользователя
+  const hasAccess = 
+    requiredRole === 'Администратор' ? user.role === 'Администратор' :
+    requiredRole === 'Пользователь' ? ['Пользователь', 'Читатель'].includes(user.role) :
+    false;
+
+  console.log('Роль пользователя:', user.role);
+  console.log('Требуемая роль:', requiredRole);
+  console.log('Доступ разрешен:', hasAccess);
+
+  if (!hasAccess) {
+    console.log('Нет доступа, редирект на /');
     return <Navigate to="/" />;
   }
 

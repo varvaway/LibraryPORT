@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import axios from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
-  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  position: relative;
+  transition: all 0.3s;
+  
+  ${({ $dimmed }) => $dimmed && `
+    filter: blur(3px);
+    opacity: 0.3;
+    pointer-events: none;
+  `}
 `;
 
 const Title = styled.h1`
@@ -56,6 +66,7 @@ const ButtonGroup = styled.div`
   display: flex;
   gap: 10px;
   margin-top: 20px;
+  justify-content: center;
 `;
 
 const Button = styled.button`
@@ -69,6 +80,56 @@ const Button = styled.button`
 
   &:hover {
     background: ${props => props.$primary ? '#8b5e3c' : '#f9f9f9'};
+  }
+`;
+
+const ReservationsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 3rem;
+`;
+
+const ReservationSection = styled.div`
+  background: #ffebcd;
+  border-radius: 8px;
+  padding: 2rem;
+
+  h2 {
+    color: #6b4423;
+    font-size: 1.8em;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+`;
+
+const ReservationList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const ReservationItem = styled.div`
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    color: #6b4423;
+    font-size: 1.4em;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: #666;
+    margin: 0.3rem 0;
+    font-size: 1.1em;
+  }
+
+  .dates {
+    color: #8b5e3c;
+    font-style: italic;
   }
 `;
 
@@ -115,71 +176,67 @@ const Dialog = styled.div`
   }
 `;
 
-const AdminPanelGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  padding: 1rem;
-  position: relative;
-  z-index: 1;
-`;
-
-const PanelItem = styled.div`
-  background: #ffebcd;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.2s;
-
-  h2 {
-    color: #6b4423;
-    margin-bottom: 1rem;
-    font-size: 1.8em;
-    font-size: 1.6em;
-  }
-
-  p {
-    color: #666;
-    margin: 0;
-    font-size: 1.2em;
-    text-align: center;
-  }
-`;
-
-const AdminPage = () => {
+const ReaderProfilePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [editedUser, setEditedUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [currentReservations, setCurrentReservations] = useState([]);
+  const [pastReservations, setPastReservations] = useState([]);
+
+  const loadUserProfile = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/auth/profile');
+      if (response.data.success) {
+        const userData = {
+          firstName: response.data.user.firstName,
+          lastName: response.data.user.lastName,
+          email: response.data.user.email
+        };
+        setUser(userData);
+        setEditedUser(userData);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке профиля:', error);
+      if (error.response?.status === 401) {
+        navigate('/');
+      }
+    }
+  }, [navigate, setUser, setEditedUser]);
+
+  const loadReservations = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/reservations/reader');
+      if (response.data.success) {
+        const now = new Date();
+        const current = [];
+        const past = [];
+
+        response.data.bookings.forEach(booking => {
+          const endDate = new Date(booking.endDate);
+          if (endDate >= now) {
+            current.push(booking);
+          } else {
+            past.push(booking);
+          }
+        });
+
+        setCurrentReservations(current);
+        setPastReservations(past);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке резервирований:', error);
+    }
+  }, [setCurrentReservations, setPastReservations]);
 
   useEffect(() => {
-    const loadUserProfile = async () => {
-      try {
-        const response = await axios.get('/api/auth/profile');
-        console.log('Profile response:', response.data);
-        if (response.data.success) {
-          setUser({
-            firstName: response.data.user.firstName,
-            lastName: response.data.user.lastName,
-            email: response.data.user.email,
-            role: response.data.user.role
-          });
-        }
-      } catch (error) {
-        console.error('Ошибка при загрузке профиля:', error);
-        if (error.response?.status === 401) {
-          navigate('/');
-        }
-      }
-    };
-
     loadUserProfile();
-  }, [navigate]);
+    loadReservations();
+  }, [loadUserProfile, loadReservations]);
 
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     if (user) {
       setEditedUser({
         firstName: user.firstName,
@@ -188,25 +245,25 @@ const AdminPage = () => {
       });
       setIsEditing(true);
     }
-  };
+  }, [user, setEditedUser, setIsEditing]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditedUser(null);
     setIsEditing(false);
-  };
+  }, [setEditedUser, setIsEditing]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     setEditedUser({
       ...editedUser,
       [e.target.name]: e.target.value
     });
-  };
+  }, [editedUser, setEditedUser]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = useCallback(() => {
     setShowConfirmation(true);
-  };
+  }, [setShowConfirmation]);
 
-  const handleConfirmSave = async () => {
+  const handleConfirmSave = useCallback(async () => {
     try {
       const response = await axios.put('/api/auth/profile', {
         firstName: editedUser.firstName,
@@ -227,12 +284,20 @@ const AdminPage = () => {
         navigate('/');
       }
     }
-  };
+  }, [editedUser, navigate, setUser, setIsEditing, setShowConfirmation, setShowSuccessMessage]);
+
+
+  const formatDate = useCallback((dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU');
+  }, []);
 
   if (!user) {
     return (
       <Container $dimmed={false}>
-        Загрузка...
+        <div style={{ textAlign: 'center', fontSize: '1.5em', color: '#6b4423', padding: '2rem' }}>
+          Загрузка...
+        </div>
       </Container>
     );
   }
@@ -240,12 +305,11 @@ const AdminPage = () => {
   return (
     <>
       <Container $dimmed={showSuccessMessage || showConfirmation}>
-        <Title>Панель администратора</Title>
+        <Title>Личный кабинет</Title>
 
         <ProfileInfo>
           {!isEditing ? (
             <>
-
               <p>{user.firstName} {user.lastName}</p>
               <p>{user.email}</p>
               <Button $primary onClick={handleEditClick}>Редактировать профиль</Button>
@@ -287,20 +351,43 @@ const AdminPage = () => {
           )}
         </ProfileInfo>
 
-        <AdminPanelGrid>
-          <PanelItem onClick={() => navigate('/readers')}>
-            <h2>Читатели</h2>
-            <p>Управление читателями библиотеки</p>
-          </PanelItem>
-          <PanelItem onClick={() => navigate('/books')}>
-            <h2>Книги</h2>
-            <p>Управление книжным фондом</p>
-          </PanelItem>
-          <PanelItem onClick={() => navigate('/bookings')}>
-            <h2>Бронирования</h2>
-            <p>Управление бронированиями книг</p>
-          </PanelItem>
-        </AdminPanelGrid>
+        <ReservationsGrid>
+          <ReservationSection>
+            <h2>Активные резервирования</h2>
+            <ReservationList>
+              {currentReservations.map(reservation => (
+                <ReservationItem key={reservation._id}>
+                  <h3>{reservation.book.title}</h3>
+                  <p>{reservation.book.author}</p>
+                  <p className="dates">
+                    {formatDate(reservation.startDate)} - {formatDate(reservation.endDate)}
+                  </p>
+                </ReservationItem>
+              ))}
+              {currentReservations.length === 0 && (
+                <p>У вас нет активных резервирований</p>
+              )}
+            </ReservationList>
+          </ReservationSection>
+
+          <ReservationSection>
+            <h2>История резервирований</h2>
+            <ReservationList>
+              {pastReservations.map(reservation => (
+                <ReservationItem key={reservation._id}>
+                  <h3>{reservation.book.title}</h3>
+                  <p>{reservation.book.author}</p>
+                  <p className="dates">
+                    {formatDate(reservation.startDate)} - {formatDate(reservation.endDate)}
+                  </p>
+                </ReservationItem>
+              ))}
+              {pastReservations.length === 0 && (
+                <p>У вас нет истории резервирований</p>
+              )}
+            </ReservationList>
+          </ReservationSection>
+        </ReservationsGrid>
       </Container>
 
       {showConfirmation && (
@@ -309,8 +396,8 @@ const AdminPage = () => {
             <h3>Подтвердите действие</h3>
             <p>Вы уверены, что хотите сохранить изменения?</p>
             <div>
-              <Button style={{ background: 'white', color: '#442727', borderColor: 'white' }} onClick={handleConfirmSave}>Да</Button>
-              <Button style={{ background: '#442727', color: 'white', borderColor: '#442727' }} onClick={() => setShowConfirmation(false)}>Нет</Button>
+              <Button $primary onClick={handleConfirmSave}>Да</Button>
+              <Button onClick={() => setShowConfirmation(false)}>Нет</Button>
             </div>
           </Dialog>
         </Overlay>
@@ -321,7 +408,9 @@ const AdminPage = () => {
           <Dialog>
             <h3>Успешно!</h3>
             <p>Изменения успешно сохранены</p>
-            <Button onClick={() => setShowSuccessMessage(false)}>OK</Button>
+            <div>
+              <Button $primary onClick={() => setShowSuccessMessage(false)}>OK</Button>
+            </div>
           </Dialog>
         </Overlay>
       )}
@@ -329,4 +418,4 @@ const AdminPage = () => {
   );
 };
 
-export default AdminPage;
+export default ReaderProfilePage;

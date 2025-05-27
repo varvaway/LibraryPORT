@@ -106,31 +106,44 @@ const LoginModal = ({ isOpen, onClose, theme }) => {
       console.log('Полученные данные пользователя:', user);
       
       // Сохраняем данные пользователя
-      localStorage.setItem('token', token);
-      // Убедимся, что роль сохраняется корректно
-      if (!user.role) {
-        user.role = user.Роль || 'Пользователь';
-      }
-      console.log('Сохраняемая роль:', user.role);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Убираем префикс 'Bearer ' из токена при сохранении
+      const cleanToken = token.replace('Bearer ', '');
+      localStorage.setItem('token', cleanToken);
+      
+      // Нормализуем данные пользователя
+      const normalizedUser = {
+        ...user,
+        name: user.firstName,
+        surname: user.lastName,
+        role: user.role || 'Читатель'
+      };
+      
+      console.log('Сохраняемая роль:', normalizedUser.role);
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
       
       // Отправляем событие об обновлении пользователя
       window.dispatchEvent(new Event('userUpdated'));
       
       // Перенаправляем пользователя в зависимости от роли
-      console.log('Попытка перенаправления:', user.role);
-      if (user.role === 'Администратор') {
-        console.log('Перенаправление на /admin');
-        navigate('/admin');
-      } else if (user.role === 'Пользователь') {
-        console.log('Перенаправление на /reader');
-        navigate('/reader');
-      } else {
-        console.log('Неизвестная роль:', user.role);
-      }
+      console.log('Попытка перенаправления:', normalizedUser.role);
+      
+      // Добавляем небольшую задержку для гарантии сохранения данных
+      setTimeout(() => {
+        if (normalizedUser.role === 'Администратор') {
+          console.log('Перенаправление на /admin');
+          navigate('/admin');
+        } else if (normalizedUser.role === 'Читатель' || normalizedUser.role === 'Пользователь') {
+          console.log('Перенаправление на /profile');
+          navigate('/profile');
+        } else {
+          console.log('Неизвестная роль, перенаправление на /');
+          navigate('/');
+        }
+        // Закрываем модальное окно после навигации
+        onClose();
+      }, 100);
 
-      // Закрываем модальное окно после навигации
-      setTimeout(() => onClose(), 100);
+      // Закрываем модальное окно будет выполнено в предыдущем setTimeout
     } catch (error) {
       console.error('Ошибка при входе:', error);
       const errorMessage = error.response?.data?.message || 'Ошибка входа. Проверьте введенные данные.';
