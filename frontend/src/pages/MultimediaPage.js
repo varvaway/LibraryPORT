@@ -163,6 +163,8 @@ const AddButton = styled(Button)`
 
 const MultimediaPage = () => {
   const [resources, setResources] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredResources, setFilteredResources] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
   const [sortField, setSortField] = useState('title');
@@ -191,13 +193,22 @@ const MultimediaPage = () => {
     fetchResources();
   }, []);
 
+  useEffect(() => {
+    const filtered = resources.filter(resource => 
+      resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resource.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredResources(filtered);
+  }, [searchQuery, resources]);
+
   const handleEdit = (resource) => {
     setEditingResource(resource);
+    // Ensure all fields are properly set with trimmed values
     setFormData({
-      title: resource.title,
-      description: resource.description,
+      title: resource.title.trim(),
+      description: resource.description ? resource.description.trim() : '',
       type: resource.type,
-      url: resource.url
+      url: resource.url.trim()
     });
     setIsModalOpen(true);
   };
@@ -235,20 +246,38 @@ const MultimediaPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.title || !formData.type || !formData.url) {
+      toast.error('Пожалуйста, заполните все обязательные поля');
+      return;
+    }
+
     try {
+      const payload = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        type: formData.type,
+        url: formData.url.trim()
+      };
+
       if (editingResource) {
-        await axios.put(`/api/multimedia/${editingResource.id}`, formData);
-        setResources(resources.map(r => 
-          r.id === editingResource.id ? { ...r, ...formData } : r
-        ));
+        const response = await axios.put(`/api/multimedia/${editingResource.id}`, payload);
+        // Refresh the resources list to get the latest data
+        const updatedResources = await axios.get('/api/multimedia');
+        setResources(updatedResources.data);
         toast.success('Ресурс успешно обновлен');
       } else {
-        const response = await axios.post('/api/multimedia', formData);
-        setResources([...resources, response.data]);
+        const response = await axios.post('/api/multimedia', payload);
+        // Refresh the resources list to get the latest data
+        const updatedResources = await axios.get('/api/multimedia');
+        setResources(updatedResources.data);
         toast.success('Ресурс успешно добавлен');
       }
+
       setIsModalOpen(false);
       setEditingResource(null);
+      setFormData({ title: '', description: '', type: 'Видео', url: '' }); // Reset form
     } catch (error) {
       console.error('Ошибка при сохранении ресурса:', error);
       toast.error('Ошибка при сохранении ресурса');
@@ -277,14 +306,28 @@ const MultimediaPage = () => {
 
   return (
     <PageContainer>
-      <Title>Мультимедийные ресурсы</Title>
-      
-      {isAdmin && (
-        <AddButton $primary onClick={handleAdd}>
-          Добавить ресурс
-        </AddButton>
-      )}
-
+      <div className="page-header">
+        <h1>Мультимедиа</h1>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Поиск ресурсов..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: '8px',
+              borderRadius: '4px',
+              border: '1px solid #ddd',
+              width: '250px'
+            }}
+          />
+          {isAdmin && (
+            <AddButton $primary onClick={handleAdd}>
+              Добавить ресурс
+            </AddButton>
+          )}
+        </div>
+      </div>
       <ResourcesTable>
         <thead>
           <tr>
@@ -302,7 +345,7 @@ const MultimediaPage = () => {
           </tr>
         </thead>
         <tbody>
-          {sortedResources.map(resource => (
+          {filteredResources.map((resource) => (
             <tr key={resource.id}>
               <td>{resource.title}</td>
               <td>{resource.description}</td>
