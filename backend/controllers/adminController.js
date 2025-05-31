@@ -6,14 +6,39 @@ exports.getAllReservations = async (req, res) => {
   try {
     const reservations = await Reservation.findAll({
       include: [
-        { model: Book, through: { attributes: [] } },
-        { model: User, attributes: ['КодПользователя', 'Имя', 'Фамилия', 'ЭлектроннаяПочта', 'Роль'] }
+        {
+          model: User,
+          attributes: ['КодПользователя', 'Имя', 'Фамилия'],
+        },
+        {
+          model: Book,
+          through: { attributes: [] },
+          attributes: ['КодКниги', 'Название'],
+          include: [
+            {
+              model: Author,
+              through: { attributes: [] },
+              attributes: ['Имя', 'Фамилия'],
+            }
+          ]
+        }
       ],
-      order: [['ДатаБронирования', 'DESC']],
+      order: [['КодБронирования', 'ASC']]
     });
-    res.json(reservations);
+
+    const formatted = reservations.map(res => ({
+      КодБронирования: res.КодБронирования,
+      Пользователь: `${res.User.Имя} ${res.User.Фамилия}`,
+      НазваниеКниги: res.Books[0]?.Название || '',
+      Авторы: res.Books[0]?.Authors?.map(a => `${a.Имя} ${a.Фамилия}`).join(', ') || '',
+      Дата: res.ДатаБронирования,
+      Статус: res.Статус
+    }));
+
+    res.json({ success: true, reservations: formatted });
   } catch (e) {
-    res.status(500).json({ message: 'Ошибка сервера' });
+    console.error('Ошибка при получении всех бронирований:', e);
+    res.status(500).json({ success: false, message: 'Ошибка сервера', error: e.message });
   }
 };
 

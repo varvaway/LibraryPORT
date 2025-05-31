@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Reservation, User, Book, ReservationItem } = require('../models');
+const { Reservation, User, Book, ReservationItem, Author } = require('../models');
 const auth = require('../middleware/auth');
 
 // Создание бронирования
@@ -163,12 +163,13 @@ router.get('/all', auth.adminAuth, async (req, res) => {
           model: Book,
           as: 'Books',
           through: { attributes: [] },
-          attributes: ['КодКниги', 'Название', 'Автор']
-        },
-        {
-          model: ReservationItem,
-          as: 'ReservationItems',
-          attributes: ['КодБронирования', 'КодКниги']
+          attributes: ['КодКниги', 'Название', 'ГодИздания', 'Статус'],
+          include: [{
+            model: Author,
+            as: 'Authors',
+            attributes: ['КодАвтора', 'Имя', 'Фамилия'],
+            through: { attributes: [] }
+          }]
         }
       ],
       order: [['ДатаБронирования', 'DESC']]
@@ -180,7 +181,6 @@ router.get('/all', auth.adminAuth, async (req, res) => {
       Статус: reservation.Статус,
       User: reservation.User,
       Books: reservation.Books || [],
-      ReservationItems: reservation.ReservationItems || []
     }));
 
     res.json({

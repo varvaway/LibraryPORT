@@ -219,20 +219,18 @@ const ReservationsPage = () => {
   const filteredReservations = React.useMemo(() => {
     return sortedReservations.filter(reservation => {
       const searchLower = searchTerm.toLowerCase();
-      const readerName = `${reservation.reader.lastName} ${reservation.reader.firstName}`.toLowerCase();
+      const readerName = reservation.User ? `${reservation.User.Фамилия} ${reservation.User.Имя}`.toLowerCase() : '';
       
-      if (!reservation.book) {
+      if (!reservation.Books || reservation.Books.length === 0) {
         return readerName.includes(searchLower);
       }
 
-      const bookTitle = reservation.book.title.toLowerCase();
-      const bookAuthor = reservation.book.author.toLowerCase();
-      const bookCategory = reservation.book.category.toLowerCase();
+      const bookTitle = reservation.Books[0]?.Название?.toLowerCase() || '';
+      const bookAuthor = reservation.Books[0]?.Authors?.map(author => `${author.Фамилия} ${author.Имя}`).join(' ')?.toLowerCase() || '';
       
       return readerName.includes(searchLower) ||
              bookTitle.includes(searchLower) ||
-             bookAuthor.includes(searchLower) ||
-             bookCategory.includes(searchLower);
+             bookAuthor.includes(searchLower);
     });
   }, [sortedReservations, searchTerm]);
 
