@@ -1,33 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import axios from '../utils/axios';
-import styled from 'styled-components';
+import { Table, TableContainer, PageHeader, Controls, SearchInput, ActionButton } from '../components/StyledTable';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../components/ConfirmationModal';
 import * as XLSX from 'xlsx';
 
 const Container = styled.div`
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-bottom: 20px;
 `;
 
 const Title = styled.h1`
   color: #333;
   margin-bottom: 20px;
-`;
-
-const Controls = styled.div`
-  margin-bottom: 20px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  position: relative;
-`;
-
-const Select = styled.select`
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
 `;
 
 const ReadersContainer = styled.div`
@@ -156,6 +145,20 @@ const ModalButtons = styled.div`
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
+`;
+
+const Select = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+  }
 `;
 
 const ReadersTable = styled.table`
@@ -454,39 +457,38 @@ const ReadersPage = () => {
 
   return (
     <Container>
-      <Title>Читатели</Title>
-      
-      <Controls>
-        <Button className="primary" onClick={handleCreate}>
-          Добавить читателя
-        </Button>
-        <Select value={sortField} onChange={(e) => setSortField(e.target.value)}>
-          <option value="lastName">Фамилии</option>
-          <option value="firstName">Имени</option>
-        </Select>
-        <Input
-          type="text"
-          placeholder="Поиск читателей..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ minWidth: '200px' }}
-        />
-        <DropdownContainer>
-          <Button 
-            className="export" 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            style={{ backgroundColor: '#6B4B4B', color: 'white' }}
-          >
-            Скачать
-          </Button>
-          <DropdownContent isOpen={isDropdownOpen}>
-            <DropdownItem onClick={handleExportExcel}>Экспорт в Excel</DropdownItem>
-            <DropdownItem onClick={handleExportWord}>Экспорт в Word</DropdownItem>
-          </DropdownContent>
-        </DropdownContainer>
-      </Controls>
+      <PageHeader>
+        <h1>Читатели</h1>
+        <Controls>
+          <SearchInput
+            type="text"
+            placeholder="Поиск читателей..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <ActionButton $primary onClick={handleCreate}>
+            Добавить читателя
+          </ActionButton>
+          <Select value={sortField} onChange={(e) => setSortField(e.target.value)}>
+            <option value="lastName">Фамилии</option>
+            <option value="firstName">Имени</option>
+          </Select>
+          <DropdownContainer>
+            <ActionButton 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              style={{ backgroundColor: '#6B4B4B', color: 'white' }}
+            >
+              Скачать
+            </ActionButton>
+            <DropdownContent isOpen={isDropdownOpen}>
+              <DropdownItem onClick={handleExportExcel}>Экспорт в Excel</DropdownItem>
+              <DropdownItem onClick={handleExportWord}>Экспорт в Word</DropdownItem>
+            </DropdownContent>
+          </DropdownContainer>
+        </Controls>
+      </PageHeader>
 
-      <ReadersContainer>
+      <TableContainer>
         <ReadersTable>
           <thead>
             <tr>
@@ -523,7 +525,7 @@ const ReadersPage = () => {
             )}
           </tbody>
         </ReadersTable>
-      </ReadersContainer>
+      </TableContainer>
 
       {isModalOpen && (
         <Modal>

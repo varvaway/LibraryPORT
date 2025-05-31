@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { Table, TableContainer, PageHeader, Controls, SearchInput, ActionButton } from '../components/StyledTable';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -16,7 +17,11 @@ const Title = styled.h1`
 const BooksPage = () => {
   return (
     <Container>
-      <Title>Книги</Title>
+      <TableContainer>
+        <Table>
+          <Title>Книги</Title>
+        </Table>
+      </TableContainer>
       {/* Здесь будет содержимое страницы книг */}
     </Container>
   );

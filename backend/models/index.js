@@ -22,36 +22,32 @@ Book.belongsToMany(Category, { through: BookCategory, foreignKey: 'КодКни�
 Category.belongsToMany(Book, { through: BookCategory, foreignKey: 'КодКатегории', otherKey: 'КодКниги' });
 
 // Книга <-> Бронирование (через ЭлементыБронирования)
-Book.belongsToMany(Reservation, { through: ReservationItem, foreignKey: 'КодКниги', otherKey: 'КодБронирования' });
-Reservation.belongsToMany(Book, { through: ReservationItem, foreignKey: 'КодБронирования', otherKey: 'КодКниги' });
+Book.belongsToMany(Reservation, { 
+  through: ReservationItem, 
+  foreignKey: 'КодКниги', 
+  otherKey: 'КодБронирования',
+  as: 'Reservations'
+});
+Reservation.belongsToMany(Book, { 
+  through: ReservationItem, 
+  foreignKey: 'КодБронирования', 
+  otherKey: 'КодКниги',
+  as: 'Books'
+});
 
 // Пользователь <-> Бронирование
-User.hasMany(Reservation, { foreignKey: 'КодПользователя' });
-Reservation.belongsTo(User, { foreignKey: 'КодПользователя' });
+User.hasMany(Reservation, { 
+  foreignKey: 'КодПользователя',
+  as: 'Reservations'
+});
+Reservation.belongsTo(User, { 
+  foreignKey: 'КодПользователя',
+  as: 'User'
+});
 
 // МультимедийныйРесурс <-> Категория
 MultimediaResource.belongsToMany(Category, { through: 'РесурсыКатегории', foreignKey: 'КодРесурса', otherKey: 'КодКатегории' });
 Category.belongsToMany(MultimediaResource, { through: 'РесурсыКатегории', foreignKey: 'КодКатегории', otherKey: 'КодРесурса' });
-
-Book.hasMany(Reservation, {
-  foreignKey: 'КодКниги',
-  as: 'Бронирования'
-});
-
-Reservation.belongsTo(Book, {
-  foreignKey: 'КодКниги',
-  as: 'Книга'
-});
-
-User.hasMany(Reservation, {
-  foreignKey: 'КодПользователя',
-  as: 'Бронирования'
-});
-
-Reservation.belongsTo(User, {
-  foreignKey: 'КодПользователя',
-  as: 'Пользователь'
-});
 
 module.exports = {
   sequelize,

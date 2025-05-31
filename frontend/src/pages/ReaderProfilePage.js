@@ -94,6 +94,7 @@ const ReservationSection = styled.div`
   background: #ffebcd;
   border-radius: 8px;
   padding: 2rem;
+  height: fit-content;
 
   h2 {
     color: #6b4423;
@@ -110,10 +111,10 @@ const ReservationList = styled.div`
 `;
 
 const ReservationItem = styled.div`
-  background: white;
+  background: transparent;
   padding: 1rem;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 
   h3 {
     color: #6b4423;
@@ -130,6 +131,12 @@ const ReservationItem = styled.div`
   .dates {
     color: #8b5e3c;
     font-style: italic;
+  }
+
+  .book-divider {
+    border: none;
+    border-top: 2px solid #442727;
+    margin: 18px 0 12px 0;
   }
 `;
 
@@ -357,11 +364,18 @@ const ReaderProfilePage = () => {
             <ReservationList>
               {currentReservations.map(reservation => (
                 <ReservationItem key={reservation._id}>
-                  <h3>Бронирование #{reservation._id}</h3>
-                  <p>Статус: {reservation.status}</p>
-                  <p className="dates">
-                    Дата: {formatDate(reservation.date)}
-                  </p>
+                  {reservation.books.map((book, idx) => (
+                    <React.Fragment key={book.id}>
+                      <div>
+                        <h3>{book.title}</h3>
+                        <p>Автор: {book.author}</p>
+                        <p className="dates">
+                          Дата: {formatDate(reservation.date)}
+                        </p>
+                      </div>
+                      {idx !== reservation.books.length - 1 && <hr className="book-divider" />}
+                    </React.Fragment>
+                  ))}
                 </ReservationItem>
               ))}
               {currentReservations.length === 0 && (
@@ -375,11 +389,18 @@ const ReaderProfilePage = () => {
             <ReservationList>
               {pastReservations.map(reservation => (
                 <ReservationItem key={reservation._id}>
-                  <h3>Бронирование #{reservation._id}</h3>
-                  <p>Статус: {reservation.status}</p>
-                  <p className="dates">
-                    Дата: {formatDate(reservation.date)}
-                  </p>
+                  {reservation.books.map((book, idx) => (
+                    <React.Fragment key={book.id}>
+                      <div>
+                        <h3>{book.title}</h3>
+                        <p>Автор: {book.author}</p>
+                        <p className="dates">
+                          Дата: {formatDate(reservation.date)}
+                        </p>
+                      </div>
+                      {idx !== reservation.books.length - 1 && <hr className="book-divider" />}
+                    </React.Fragment>
+                  ))}
                 </ReservationItem>
               ))}
               {pastReservations.length === 0 && (

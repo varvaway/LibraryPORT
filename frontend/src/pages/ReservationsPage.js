@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { Table, TableContainer, PageHeader, Controls, SearchInput, ActionButton } from '../components/StyledTable';
 import axios from '../utils/axios';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, HeadingLevel, TextRun } from 'docx';
+import { Document, Packer, Paragraph, Table as DocxTable, TableCell, TableRow, HeadingLevel, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 
 const Container = styled.div`
@@ -27,7 +28,7 @@ const SearchContainer = styled.div`
   align-items: center;
 `;
 
-const SearchInput = styled.input`
+const StyledSearchInput = styled.input`
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -263,7 +264,7 @@ const ReservationsPage = () => {
             text: 'Список бронирований',
             heading: HeadingLevel.HEADING_1
           }),
-          new Table({
+          new DocxTable({
             rows: [
               new TableRow({
                 children: [
@@ -312,27 +313,28 @@ const ReservationsPage = () => {
 
   return (
     <Container>
-      <Title>Управление бронированиями</Title>
-      
-      <SearchContainer>
-        <SearchInput
-          type="text"
-          placeholder="Поиск по читателю или книге..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <div style={{ position: 'relative' }}>
-          <div ref={dropdownRef}>
-            <ExportButton onClick={() => setShowExportDropdown(!showExportDropdown)}>
-              Скачать
-            </ExportButton>
-            <DropdownContent $show={showExportDropdown}>
-              <DropdownItem onClick={() => { exportToExcel(); setShowExportDropdown(false); }}>Экспорт в Excel</DropdownItem>
-              <DropdownItem onClick={() => { exportToWord(); setShowExportDropdown(false); }}>Экспорт в Word</DropdownItem>
-            </DropdownContent>
+      <PageHeader>
+        <h1>Бронирования</h1>
+        <Controls>
+          <StyledSearchInput
+            type="text"
+            placeholder="Поиск бронирований..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div style={{ position: 'relative' }}>
+            <div ref={dropdownRef}>
+              <ExportButton onClick={() => setShowExportDropdown(!showExportDropdown)}>
+                Скачать
+              </ExportButton>
+              <DropdownContent $show={showExportDropdown}>
+                <DropdownItem onClick={() => { exportToExcel(); setShowExportDropdown(false); }}>Экспорт в Excel</DropdownItem>
+                <DropdownItem onClick={() => { exportToWord(); setShowExportDropdown(false); }}>Экспорт в Word</DropdownItem>
+              </DropdownContent>
+            </div>
           </div>
-        </div>
-      </SearchContainer>
+        </Controls>
+      </PageHeader>
 
       <StyledTable>
         <thead>

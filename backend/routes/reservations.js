@@ -153,17 +153,24 @@ router.delete('/:id', auth.userAuth, async (req, res) => {
 router.get('/all', auth.adminAuth, async (req, res) => {
   try {
     const reservations = await Reservation.findAll({
-      include: [{
-        model: User,
-        attributes: ['Имя', 'Фамилия']
-      },
-      {
-        model: ReservationItem,
-        include: [{
+      include: [
+        {
+          model: User,
+          as: 'User',
+          attributes: ['КодПользователя', 'Имя', 'Фамилия', 'ЭлектроннаяПочта']
+        },
+        {
           model: Book,
-          attributes: ['Название', 'Автор']
-        }]
-      }],
+          as: 'Books',
+          through: { attributes: [] },
+          attributes: ['КодКниги', 'Название', 'Автор']
+        },
+        {
+          model: ReservationItem,
+          as: 'ReservationItems',
+          attributes: ['КодБронирования', 'КодКниги']
+        }
+      ],
       order: [['ДатаБронирования', 'DESC']]
     });
 
@@ -172,13 +179,21 @@ router.get('/all', auth.adminAuth, async (req, res) => {
       ДатаБронирования: reservation.ДатаБронирования,
       Статус: reservation.Статус,
       User: reservation.User,
-      Books: reservation.ReservationItems?.map(item => item.Book) || []
+      Books: reservation.Books || [],
+      ReservationItems: reservation.ReservationItems || []
     }));
 
-    res.json(formattedReservations);
+    res.json({
+      success: true,
+      reservations: formattedReservations
+    });
   } catch (error) {
     console.error('Ошибка при получении всех бронирований:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Ошибка сервера',
+      error: error.message 
+    });
   }
 });
 

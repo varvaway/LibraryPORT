@@ -45,6 +45,7 @@ const userAuth = async (req, res, next) => {
     // Добавляем пользователя в запрос
     req.user = {
       id: user.КодПользователя,
+      КодПользователя: user.КодПользователя,
       firstName: user.Имя,
       lastName: user.Фамилия,
       email: user.ЭлектроннаяПочта,
@@ -102,6 +103,7 @@ const adminAuth = async (req, res, next) => {
     // Добавляем пользователя в запрос
     req.user = {
       id: user.КодПользователя,
+      КодПользователя: user.КодПользователя,
       firstName: user.Имя,
       lastName: user.Фамилия,
       email: user.ЭлектроннаяПочта,
