@@ -7,7 +7,7 @@ export const theme = {
   },
   fonts: {
     heading: "'Lovelace', serif",
-    body: "'Moiamova', sans-serif",
+    body: "'Catrinity', sans-serif",
     sizes: {
       base: '18px',
       h1: '2.8rem',

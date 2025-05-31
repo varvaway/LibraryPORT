@@ -9,7 +9,10 @@ const userAuth = async (req, res, next) => {
     
     if (!authHeader) {
       console.log('Отсутствует заголовок Authorization');
-      return res.status(401).json({ message: 'Требуется аутентификация' });
+      return res.status(401).json({
+        success: false,
+        message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+      });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -17,7 +20,10 @@ const userAuth = async (req, res, next) => {
 
     if (!token) {
       console.log('Токен пустой после обработки');
-      return res.status(401).json({ message: 'Требуется аутентификация' });
+      return res.status(401).json({
+        success: false,
+        message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+      });
     }
 
     // Проверяем токен
@@ -30,7 +36,10 @@ const userAuth = async (req, res, next) => {
 
     if (!user) {
       console.log('Пользователь не найден в базе');
-      return res.status(401).json({ message: 'Пользователь не найден' });
+      return res.status(401).json({
+        success: false,
+        message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+      });
     }
 
     // Добавляем пользователя в запрос
@@ -45,7 +54,10 @@ const userAuth = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Ошибка аутентификации:', error);
-    res.status(401).json({ message: 'Ошибка аутентификации' });
+    res.status(401).json({
+      success: false,
+      message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+    });
   }
 };
 
@@ -57,7 +69,10 @@ const adminAuth = async (req, res, next) => {
     
     if (!authHeader) {
       console.log('Отсутствует заголовок Authorization');
-      return res.status(401).json({ message: 'Требуется аутентификация' });
+      return res.status(401).json({
+        success: false,
+        message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+      });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -65,7 +80,10 @@ const adminAuth = async (req, res, next) => {
 
     if (!token) {
       console.log('Токен пустой после обработки');
-      return res.status(401).json({ message: 'Требуется аутентификация' });
+      return res.status(401).json({
+        success: false,
+        message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+      });
     }
 
     // Проверяем токен
@@ -93,7 +111,10 @@ const adminAuth = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Ошибка аутентификации администратора:', error);
-    res.status(401).json({ message: 'Ошибка аутентификации' });
+    res.status(401).json({
+      success: false,
+      message: 'Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.'
+    });
   }
 };
 

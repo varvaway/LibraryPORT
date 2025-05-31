@@ -10,37 +10,40 @@ const Container = styled.div`
 const Title = styled.h1`
   text-align: center;
   color: #6b4423;
-  font-size: 2.5em;
-  margin-bottom: 2rem;
+  font-size: 2em;
+  margin-bottom: 1.5rem;
 `;
 
 const ProfileInfo = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   position: relative;
 
   p {
-    margin: 0.5rem 0;
-    font-size: 2em;
+    margin: 0.3rem 0;
+    font-size: 1.5em;
     color: #6b4423;
   }
 
   button {
-    margin-top: 25px;
-    font-size: 1.1em;
-    padding: 12px 24px;
+    margin-top: 15px;
+    font-size: 1em;
+    padding: 8px 20px;
   }
 `;
 
 const EditableField = styled.div`
-  margin: 12px 0;
+  margin: 8px 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
   
   input {
     width: 100%;
-    padding: 12px;
+    padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 2em;
+    font-size: 1.5em;
     color: #6b4423;
     text-align: center;
     background: transparent;
@@ -54,21 +57,24 @@ const EditableField = styled.div`
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 15px;
+  justify-content: center;
 `;
 
 const Button = styled.button`
-  padding: 8px 16px;
+  padding: 6px 14px;
   background: ${props => props.$primary ? '#6b4423' : '#fff'};
   color: ${props => props.$primary ? '#fff' : '#6b4423'};
   border: 1px solid #6b4423;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.9em;
+  transition: all 0.2s;
 
   &:hover {
     background: ${props => props.$primary ? '#8b5e3c' : '#f9f9f9'};
+    transform: translateY(-1px);
   }
 `;
 
@@ -117,33 +123,38 @@ const Dialog = styled.div`
 
 const AdminPanelGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
   padding: 1rem;
   position: relative;
   z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
 `;
 
 const PanelItem = styled.div`
   background: #ffebcd;
   border-radius: 8px;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s;
 
   h2 {
     color: #6b4423;
-    margin-bottom: 1rem;
-    font-size: 1.8em;
-    font-size: 1.6em;
+    margin-bottom: 0.8rem;
+    font-size: 1.4em;
   }
 
   p {
     color: #666;
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1em;
     text-align: center;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
   }
 `;
 
@@ -288,17 +299,21 @@ const AdminPage = () => {
         </ProfileInfo>
 
         <AdminPanelGrid>
-          <PanelItem onClick={() => navigate('/readers')}>
+          <PanelItem onClick={() => navigate('/admin/readers')}>
             <h2>Читатели</h2>
             <p>Управление читателями библиотеки</p>
           </PanelItem>
-          <PanelItem onClick={() => navigate('/books')}>
+          <PanelItem onClick={() => navigate('/admin/books')}>
             <h2>Книги</h2>
             <p>Управление книжным фондом</p>
           </PanelItem>
-          <PanelItem onClick={() => navigate('/bookings')}>
+          <PanelItem onClick={() => navigate('/admin/reservations')}>
             <h2>Бронирования</h2>
             <p>Управление бронированиями книг</p>
+          </PanelItem>
+          <PanelItem onClick={() => navigate('/admin/multimedia')}>
+            <h2>Мультимедиа</h2>
+            <p>Управление мультимедийными ресурсами</p>
           </PanelItem>
         </AdminPanelGrid>
       </Container>

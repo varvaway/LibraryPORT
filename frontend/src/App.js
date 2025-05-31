@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from 'styled-components';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { theme } from './styles/theme';
 import { GlobalStyle } from './styles/GlobalStyle';
 import Header from './components/Header';
@@ -12,15 +14,16 @@ import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
 import AdminPage from './pages/AdminPage';
 import ReaderPage from './pages/ReaderPage';
+import ReservationsPage from './pages/ReservationsPage';
 import ReadersPage from './pages/ReadersPage';
 import ReaderDetailsPage from './pages/ReaderDetailsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import CatalogPage from './pages/CatalogPage';
 import MultimediaPage from './pages/MultimediaPage';
 import BooksPage from './pages/BooksPage';
-import ReservationsPage from './pages/ReservationsPage';
 import LoginPage from './pages/LoginPage';
 import ReaderProfilePage from './pages/ReaderProfilePage';
+import AdminBooksPage from './pages/AdminBooksPage';
 
 function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -50,11 +53,12 @@ function App() {
     <Router>
       <ThemeProvider theme={theme}>
         <GlobalStyle />
+        <ToastContainer position="top-right" autoClose={3000} />
         
-        <div className="App">
+        <div className="App" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           <Header onLoginClick={handleLoginClick} />
           
-          <main style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto' }}>
+          <main style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto', flex: '1 0 auto' }}>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/catalog" element={<CatalogPage />} />
@@ -68,7 +72,31 @@ function App() {
                 } 
               />
               <Route 
-                path="/readers" 
+                path="/admin/books" 
+                element={
+                  <ProtectedRoute requiredRole="Администратор">
+                    <AdminBooksPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/multimedia" 
+                element={
+                  <ProtectedRoute requiredRole="Администратор">
+                    <MultimediaPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/reservations" 
+                element={
+                  <ProtectedRoute requiredRole="Администратор">
+                    <ReservationsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/readers" 
                 element={
                   <ProtectedRoute requiredRole="Администратор">
                     <ReadersPage />

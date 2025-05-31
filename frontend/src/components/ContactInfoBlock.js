@@ -84,7 +84,7 @@ export default function ContactInfoBlock() {
         <div>
           <ContactItem>
             <strong>Адрес:</strong>
-            Большой пр. ПС, 9, 18 (4-й этаж)
+            Большой пр. ПС, 9/18 (4-й этаж)
           </ContactItem>
           <ContactItem>
             <strong>Телефон:</strong>
@@ -124,7 +124,7 @@ export default function ContactInfoBlock() {
             Понедельник – пятница: 12:00–20:00<br />
             Суббота: 11:00–19:00<br />
             Выходные дни: воскресенье<br />
-            Санитарный день – последний четверг месяца
+            Санитарный день – <strong>последний четверг месяца</strong>
           </ContactItem>
         </div>
       </InfoSection>

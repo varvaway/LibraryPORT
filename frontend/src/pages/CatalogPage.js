@@ -226,14 +226,16 @@ const modalStyles = {
     marginRight: '-50%',
     transform: 'translate(-50%, -50%)',
     backgroundColor: '#fff',
-    padding: '20px',
+    padding: '30px',
     borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-    maxWidth: '400px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+    maxWidth: '500px',
     width: '90%',
+    border: 'none',
   },
   overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backdropFilter: 'blur(2px)',
   },
 };
 
@@ -283,14 +285,35 @@ const CatalogPage = () => {
   }, []);
 
   const handleReserve = async (book) => {
+    // Проверяем наличие токена перед отправкой запроса
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setModalMessage('Только зарегистрированные читатели могут бронировать книги. Пожалуйста, войдите в личный кабинет или оставьте заявку на регистрацию.');
+      setShowModal(true);
+      return;
+    }
+
     try {
       await axios.post('/api/reservations', { bookId: book.id });
       setModalMessage(`Вы забронировали книгу "${book.title}" (${book.author}). Приходите за ней до конца рабочего дня.`);
       setShowModal(true);
     } catch (error) {
       console.error('Ошибка при бронировании:', error);
-      setModalMessage('Произошла ошибка при бронировании книги. Попробуйте позже.');
+      console.log('Ответ сервера:', error.response);
+      console.log('Данные ответа:', error.response?.data);
+      
+      // Используем сообщение от сервера, если оно есть
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при бронировании книги. Попробуйте позже.';
+      console.log('Сообщение об ошибке:', errorMessage);
+      
+      setModalMessage(errorMessage);
       setShowModal(true);
+
+      // Если ошибка 401, удаляем токен
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
   };
 
@@ -377,8 +400,33 @@ const CatalogPage = () => {
         contentLabel="Сообщение"
         style={modalStyles}
       >
-        <h2>{modalMessage}</h2>
-        <Button onClick={() => setShowModal(false)}>Закрыть</Button>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px',
+          textAlign: 'center'
+        }}>
+          <h2 style={{
+            color: '#333',
+            fontSize: '1.5rem',
+            marginBottom: '10px',
+            fontWeight: '500',
+            lineHeight: '1.4'
+          }}>
+            {modalMessage}
+          </h2>
+          <Button 
+            onClick={() => setShowModal(false)}
+            style={{
+              marginTop: '10px',
+              padding: '10px 25px',
+              fontSize: '1rem'
+            }}
+          >
+            Закрыть
+          </Button>
+        </div>
       </Modal>
     </Container>
   );

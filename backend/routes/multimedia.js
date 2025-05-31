@@ -42,8 +42,20 @@ router.get('/:id', async (req, res) => {
 // Создать новый ресурс (только админ)
 router.post('/', userAuth, adminAuth, async (req, res) => {
   try {
-    const resource = await db.MultimediaResource.create(req.body);
-    res.status(201).json(resource);
+    const { title, description, type, url } = req.body;
+    const resource = await db.MultimediaResource.create({
+      Название: title,
+      Описание: description,
+      Тип: type,
+      Ссылка: url
+    });
+    res.status(201).json({
+      id: resource.КодРесурса,
+      title: resource.Название,
+      description: resource.Описание,
+      type: resource.Тип,
+      url: resource.Ссылка
+    });
   } catch (error) {
     console.error('Ошибка при создании ресурса:', error);
     res.status(500).json({ message: 'Ошибка сервера' });
@@ -57,8 +69,20 @@ router.put('/:id', userAuth, adminAuth, async (req, res) => {
     if (!resource) {
       return res.status(404).json({ message: 'Ресурс не найден' });
     }
-    await resource.update(req.body);
-    res.json(resource);
+    const { title, description, type, url } = req.body;
+    await resource.update({
+      Название: title,
+      Описание: description,
+      Тип: type,
+      Ссылка: url
+    });
+    res.json({
+      id: resource.КодРесурса,
+      title: resource.Название,
+      description: resource.Описание,
+      type: resource.Тип,
+      url: resource.Ссылка
+    });
   } catch (error) {
     console.error('Ошибка при обновлении ресурса:', error);
     res.status(500).json({ message: 'Ошибка сервера' });

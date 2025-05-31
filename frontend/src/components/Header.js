@@ -174,8 +174,12 @@ const Header = ({ onLoginClick }) => {
           </Logo>
           
           <Navigation>
-            <NavLink to="/catalog">Каталог</NavLink>
-            <NavLink to="/multimedia">Мультимедийные ресурсы</NavLink>
+            {!user || user.role !== 'Администратор' ? (
+              <>
+                <NavLink to="/catalog">Каталог</NavLink>
+                <NavLink to="/multimedia">Мультимедийные ресурсы</NavLink>
+              </>
+            ) : null}
           </Navigation>
 
           <AuthSection>

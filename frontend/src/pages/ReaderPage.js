@@ -181,35 +181,73 @@ const ReaderPage = () => {
   const [historyBooks, setHistoryBooks] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const loadBooks = async () => {
+    try {
+      setIsLoading(true);
+      // Получаем активные бронирования
+      const currentResponse = await axios.get(`/api/reservations/reader/${user.id}`);
+      const currentReservations = currentResponse.data.reservations.filter(
+        reservation => reservation.Статус === 'Активно'
+      );
+      setCurrentBooks(currentReservations.map(reservation => ({
+        id: reservation.КодБронирования,
+        title: reservation.Книга.Название,
+        author: reservation.Книга.Автор,
+        reservationDate: reservation.ДатаНачала,
+        returnDate: reservation.ДатаОкончания,
+        status: reservation.Статус
+      })));
+
+      // Получаем историю бронирований
+      const historyResponse = await axios.get(`/api/reservations/reader/${user.id}`);
+      const historyReservations = historyResponse.data.reservations.filter(
+        reservation => reservation.Статус === 'Завершено'
+      );
+      setHistoryBooks(historyReservations.map(reservation => ({
+        id: reservation.КодБронирования,
+        title: reservation.Книга.Название,
+        author: reservation.Книга.Автор,
+        reservationDate: reservation.ДатаНачала,
+        returnDate: reservation.ДатаОкончания,
+        status: reservation.Статус
+      })));
+
+      setError(null);
+    } catch (error) {
+      console.error('Ошибка при загрузке книг:', error);
+      setError('Ошибка при загрузке книг');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
     const checkAuthAndLoadProfile = async () => {
-      const token = localStorage.getItem('token');
-      const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-      
-      if (!token || !storedUser || storedUser.role === 'Администратор') {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      if (!storedUser) {
         navigate('/');
         return;
       }
 
       try {
-        const response = await axios.get('/api/auth/profile');
-        const userData = response.data;
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        const response = await axios.get(`/api/readers/${storedUser.id}`);
+        if (response.data.success) {
+          const userData = response.data.reader;
+          setUser(userData);
+          setEditedUser(userData);
+          loadBooks();
+        } else {
+          setError('Ошибка при загрузке профиля');
+        }
       } catch (error) {
         console.error('Ошибка при загрузке профиля:', error);
-        if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/');
-        }
+        setError('Ошибка при загрузке профиля');
       }
     };
-    
     checkAuthAndLoadProfile();
-  }, [navigate]);
-  
+  }, []);
+
   useEffect(() => {
     const loadBooks = async () => {
       try {
@@ -218,7 +256,6 @@ const ReaderPage = () => {
         const headers = {
           'Authorization': `Bearer ${token}`
         };
-
 
         try {
           const currentResponse = await axios.get('/api/reservations/current', { headers });
@@ -231,13 +268,11 @@ const ReaderPage = () => {
           }
         }
 
-        // Пытаемся загрузить историю броней
         try {
           const historyResponse = await axios.get('/api/reservations/history', { headers });
           setHistoryBooks(historyResponse.data);
         } catch (error) {
           if (error.response?.status === 404) {
-            // Если эндпоинт не существует, устанавливаем пустой массив
             setHistoryBooks([]);
           } else {
             throw error;
@@ -251,7 +286,6 @@ const ReaderPage = () => {
       }
     };
 
-    loadUserProfile();
     loadBooks();
   }, []);
 
@@ -276,20 +310,27 @@ const ReaderPage = () => {
   
   const handleSaveChanges = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put('/api/auth/profile', editedUser, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await axios.put(`/api/readers/${user.id}`, {
+        Имя: editedUser.name,
+        Фамилия: editedUser.surname,
+        ЭлектроннаяПочта: editedUser.email
       });
-      const updatedUser = response.data;
-      
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      setIsEditing(false);
-      
-      window.dispatchEvent(new Event('userUpdated'));
-      setShowSuccess(true);
+
+      if (response.data.success) {
+        const updatedUser = {
+          ...user,
+          name: editedUser.name,
+          surname: editedUser.surname,
+          email: editedUser.email
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setIsEditing(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2000);
+      } else {
+        alert('Ошибка при сохранении изменений');
+      }
     } catch (error) {
       console.error('Ошибка при сохранении:', error);
       alert('Ошибка при сохранении изменений');

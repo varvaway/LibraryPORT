@@ -208,15 +208,15 @@ const ReaderProfilePage = () => {
 
   const loadReservations = useCallback(async () => {
     try {
-      const response = await axios.get('/api/reservations/reader');
+      const response = await axios.get('/api/bookings/reader');
       if (response.data.success) {
         const now = new Date();
         const current = [];
         const past = [];
 
         response.data.bookings.forEach(booking => {
-          const endDate = new Date(booking.endDate);
-          if (endDate >= now) {
+          const bookingDate = new Date(booking.date);
+          if (booking.status === 'Активно') {
             current.push(booking);
           } else {
             past.push(booking);
@@ -353,37 +353,37 @@ const ReaderProfilePage = () => {
 
         <ReservationsGrid>
           <ReservationSection>
-            <h2>Активные резервирования</h2>
+            <h2>Активные бронирования</h2>
             <ReservationList>
               {currentReservations.map(reservation => (
                 <ReservationItem key={reservation._id}>
-                  <h3>{reservation.book.title}</h3>
-                  <p>{reservation.book.author}</p>
+                  <h3>Бронирование #{reservation._id}</h3>
+                  <p>Статус: {reservation.status}</p>
                   <p className="dates">
-                    {formatDate(reservation.startDate)} - {formatDate(reservation.endDate)}
+                    Дата: {formatDate(reservation.date)}
                   </p>
                 </ReservationItem>
               ))}
               {currentReservations.length === 0 && (
-                <p>У вас нет активных резервирований</p>
+                <p>У вас нет активных бронирований</p>
               )}
             </ReservationList>
           </ReservationSection>
 
           <ReservationSection>
-            <h2>История резервирований</h2>
+            <h2>История бронирований</h2>
             <ReservationList>
               {pastReservations.map(reservation => (
                 <ReservationItem key={reservation._id}>
-                  <h3>{reservation.book.title}</h3>
-                  <p>{reservation.book.author}</p>
+                  <h3>Бронирование #{reservation._id}</h3>
+                  <p>Статус: {reservation.status}</p>
                   <p className="dates">
-                    {formatDate(reservation.startDate)} - {formatDate(reservation.endDate)}
+                    Дата: {formatDate(reservation.date)}
                   </p>
                 </ReservationItem>
               ))}
               {pastReservations.length === 0 && (
-                <p>У вас нет истории резервирований</p>
+                <p>У вас нет истории бронирований</p>
               )}
             </ReservationList>
           </ReservationSection>

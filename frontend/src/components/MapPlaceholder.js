@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 const MapContainer = styled.div`
   width: 100%;
-  height: 400px;
+  height: 600px;
   margin: 20px 0;
   border-radius: 12px;
   overflow: hidden;
@@ -23,7 +23,7 @@ export default function MapPlaceholder() {
       window.ymaps.ready(() => {
         const map = new window.ymaps.Map('map', {
           center: [59.954912, 30.294030],
-          zoom: 16,
+          zoom: 17,
           controls: ['zoomControl']
         });
 

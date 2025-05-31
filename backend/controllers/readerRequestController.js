@@ -5,14 +5,18 @@ const requestHistory = new Map();
 // Время ожидания между заявками (в миллисекундах)
 const COOLDOWN_TIME = 15 * 60 * 1000; // 15 минут
 
+// Создаем конфигурацию для отправки почты через Яндекс
 const transporter = nodemailer.createTransport({
-  service: 'Yandex',
+  host: 'smtp.yandex.ru',
+  port: 465,
+  secure: true, // используем SSL
   auth: {
-    user: 'KVS56smartbeaver@yandex.ru',
-    pass: 'nphgxaabpmuhqyjv' // Пароль приложения из Яндекс ID
+    user: process.env.EMAIL_USER || 'your-email@yandex.ru',
+    pass: process.env.EMAIL_PASS || 'your-app-password'
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false, // для обхода ошибок сертификата
+    minVersion: 'TLSv1.2'
   }
 });
 
@@ -95,8 +99,8 @@ exports.sendReaderRequest = async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: '"Юношеская библиотека им. А.П. Гайдара" <KVS56smartbeaver@yandex.ru>',
-      to: 'KVS56smartbeaver@yandex.ru',
+      from: `"${senderName}" <${process.env.EMAIL_USER || 'your-email@yandex.ru'}>`,
+      to: process.env.EMAIL_TO || 'your-email@yandex.ru',
       subject: 'Новая заявка на регистрацию читателя',
       html: `
         <h2>Новая заявка на регистрацию читателя</h2>

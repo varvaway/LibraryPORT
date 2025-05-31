@@ -28,6 +28,7 @@ const readerRequestRoutes = require('./routes/readerRequest');
 const reservationsRoutes = require('./routes/reservations');
 const multimediaRoutes = require('./routes/multimedia');
 const readersRoutes = require('./routes/readers');
+const bookingsRoutes = require('./routes/bookings');
 
 
 const app = express();
@@ -60,6 +61,7 @@ app.use('/api/reader-requests', readerRequestRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/multimedia', multimediaRoutes);
 app.use('/api/readers', readersRoutes);
+app.use('/api/bookings', bookingsRoutes);
 
 
 

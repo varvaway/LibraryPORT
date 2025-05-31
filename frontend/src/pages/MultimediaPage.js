@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from '../utils/axios';
+import { toast } from 'react-toastify';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const PageContainer = styled.div`
   padding: 2rem;
@@ -9,33 +11,108 @@ const PageContainer = styled.div`
 `;
 
 const Title = styled.h1`
-  color: ${({ theme }) => theme.colors.mahogany};
+  color: #333;
   margin-bottom: 2rem;
   font-size: 2rem;
 `;
 
-const ResourcesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+const TableHeader = styled.th`
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  background-color: #333;
+  color: white;
+  font-weight: 500;
+  cursor: ${props => props.$sortable ? 'pointer' : 'default'};
+  
+  &:hover {
+    background-color: ${props => props.$sortable ? '#444' : '#333'};
+  }
 `;
 
-const ResourceCard = styled.div`
+const ResourcesTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
   background: white;
   border-radius: 8px;
-  padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
   
-  h3 {
-    color: ${({ theme }) => theme.colors.mahogany};
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
+  td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
   }
-  
-  p {
+
+  tr:hover {
+    background-color: ${({ theme }) => theme.colors.pistachioCream};
+  }
+
+  .actions {
+    width: 200px;
+    text-align: right;
+  }
+`;
+
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-weight: 500;
     color: ${({ theme }) => theme.colors.darkGray};
-    margin: 0.25rem 0;
-    font-size: 1rem;
+  }
+`;
+
+const Input = styled.input`
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.mahogany};
+  }
+`;
+
+const Select = styled.select`
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.mahogany};
   }
 `;
 
@@ -79,15 +156,25 @@ const Button = styled.button`
 `;
 
 const AddButton = styled(Button)`
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
 `;
 
 const MultimediaPage = () => {
   const [resources, setResources] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
+  const [sortField, setSortField] = useState('title');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [resourceToDelete, setResourceToDelete] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type: 'Видео',
+    url: ''
+  });
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const isAdmin = user?.role === 'Администратор';
 
@@ -105,54 +192,212 @@ const MultimediaPage = () => {
   }, []);
 
   const handleEdit = (resource) => {
-    // TODO: Implement edit functionality
-    console.log('Edit resource:', resource);
+    setEditingResource(resource);
+    setFormData({
+      title: resource.title,
+      description: resource.description,
+      type: resource.type,
+      url: resource.url
+    });
+    setIsModalOpen(true);
   };
 
-  const handleDelete = async (resource) => {
-    if (window.confirm('Вы уверены, что хотите удалить этот ресурс?')) {
-      try {
-        await axios.delete(`/api/multimedia/${resource.id}`);
-        setResources(resources.filter(r => r.id !== resource.id));
-      } catch (error) {
-        console.error('Ошибка при удалении ресурса:', error);
-      }
+  const handleDeleteClick = (resource, event) => {
+    event.stopPropagation();
+    setResourceToDelete(resource);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await axios.delete(`/api/multimedia/${resourceToDelete.id}`);
+      setResources(resources.filter(r => r.id !== resourceToDelete.id));
+      toast.success('Ресурс успешно удален');
+    } catch (error) {
+      console.error('Ошибка при удалении ресурса:', error);
+      toast.error('Ошибка при удалении ресурса');
+    } finally {
+      setDeleteModalOpen(false);
+      setResourceToDelete(null);
     }
   };
 
   const handleAdd = () => {
-    // TODO: Implement add functionality
-    console.log('Add new resource');
+    setEditingResource(null);
+    setFormData({
+      title: '',
+      description: '',
+      type: 'Видео',
+      url: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingResource) {
+        await axios.put(`/api/multimedia/${editingResource.id}`, formData);
+        setResources(resources.map(r => 
+          r.id === editingResource.id ? { ...r, ...formData } : r
+        ));
+        toast.success('Ресурс успешно обновлен');
+      } else {
+        const response = await axios.post('/api/multimedia', formData);
+        setResources([...resources, response.data]);
+        toast.success('Ресурс успешно добавлен');
+      }
+      setIsModalOpen(false);
+      setEditingResource(null);
+    } catch (error) {
+      console.error('Ошибка при сохранении ресурса:', error);
+      toast.error('Ошибка при сохранении ресурса');
+    }
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedResources = [...resources].sort((a, b) => {
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    if (a[sortField] < b[sortField]) return -1 * direction;
+    if (a[sortField] > b[sortField]) return 1 * direction;
+    return 0;
+  });
+
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   return (
     <PageContainer>
       <Title>Мультимедийные ресурсы</Title>
       
-      <ResourcesGrid>
-        {resources.map(resource => (
-          <ResourceCard key={resource.id}>
-            <h3>{resource.title}</h3>
-            <p>{resource.description}</p>
-            <p>Тип: {resource.type}</p>
-            <ResourceLink href={resource.url} target="_blank" rel="noopener noreferrer">
-              Открыть ресурс
-            </ResourceLink>
-            {isAdmin && (
-              <ButtonGroup>
-                <Button onClick={() => handleEdit(resource)}>Редактировать</Button>
-                <Button onClick={() => handleDelete(resource)}>Удалить</Button>
-              </ButtonGroup>
-            )}
-          </ResourceCard>
-        ))}
-      </ResourcesGrid>
-
       {isAdmin && (
         <AddButton $primary onClick={handleAdd}>
           Добавить ресурс
         </AddButton>
       )}
+
+      <ResourcesTable>
+        <thead>
+          <tr>
+            <TableHeader $sortable onClick={() => handleSort('title')}>
+              Название {sortField === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </TableHeader>
+            <TableHeader $sortable onClick={() => handleSort('description')}>
+              Описание {sortField === 'description' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </TableHeader>
+            <TableHeader $sortable onClick={() => handleSort('type')}>
+              Тип {sortField === 'type' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </TableHeader>
+            <TableHeader>Ссылка</TableHeader>
+            {isAdmin && <TableHeader className="actions">Действия</TableHeader>}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedResources.map(resource => (
+            <tr key={resource.id}>
+              <td>{resource.title}</td>
+              <td>{resource.description}</td>
+              <td>{resource.type}</td>
+              <td>
+                <ResourceLink href={resource.url} target="_blank" rel="noopener noreferrer">
+                  Открыть ресурс
+                </ResourceLink>
+              </td>
+              {isAdmin && (
+                <td className="actions">
+                  <ButtonGroup>
+                    <Button onClick={() => handleEdit(resource)}>Редактировать</Button>
+                    <Button onClick={(e) => handleDeleteClick(resource, e)}>Удалить</Button>
+                  </ButtonGroup>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </ResourcesTable>
+
+      {isAdmin && (
+        <>
+          
+
+          {isModalOpen && (
+            <Modal>
+              <ModalContent>
+                <h2>{editingResource ? 'Редактировать ресурс' : 'Добавить ресурс'}</h2>
+                <Form onSubmit={handleSubmit}>
+                  <FormGroup>
+                    <label>Название:</label>
+                    <Input
+                      type="text"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      name="title"
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Описание:</label>
+                    <Input
+                      type="text"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      name="description"
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Ссылка:</label>
+                    <Input
+                      type="url"
+                      value={formData.url}
+                      onChange={handleInputChange}
+                      name="url"
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Тип:</label>
+                    <Select id="type" value={formData.type} onChange={handleInputChange} name="type">
+                      <option value="Видео">Видео</option>
+                      <option value="Аудио">Аудио</option>
+                    </Select>
+                  </FormGroup>
+                  <ButtonGroup>
+                    <Button type="button" onClick={() => setIsModalOpen(false)}>
+                      Отмена
+                    </Button>
+                    <Button type="submit" $primary>
+                      {editingResource ? 'Сохранить' : 'Добавить'}
+                    </Button>
+                  </ButtonGroup>
+                </Form>
+              </ModalContent>
+            </Modal>
+          )}
+        </>
+      )}
+
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setResourceToDelete(null);
+        }}
+        title="Удаление ресурса"
+      >
+        <p>Вы действительно хотите удалить этот ресурс?</p>
+        <p style={{ marginTop: '12px', color: '#d32f2f' }}>Отменить действие будет невозможно.</p>
+      </ConfirmationModal>
     </PageContainer>
   );
 };

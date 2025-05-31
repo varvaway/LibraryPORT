@@ -8,7 +8,7 @@ const FooterBlock = styled.footer`
   font-size: 0.95rem;
   text-align: center;
   padding: 18px 0 12px 0;
-  margin-top: 40px;
+  flex-shrink: 0;
 `;
 
 export default function Footer() {
