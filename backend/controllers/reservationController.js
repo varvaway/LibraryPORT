@@ -3,12 +3,12 @@ const { Op } = require('sequelize');
 
 // Создать бронирование
 exports.createReservation = async (req, res) => {
-  const { books, returnDate } = req.body;
+  const { books, ДатаОкончания } = req.body;
   if (!Array.isArray(books) || books.length === 0) {
     return res.status(400).json({ message: 'Не выбраны книги для бронирования' });
   }
-  if (!returnDate) {
-    return res.status(400).json({ message: 'Не указана дата возврата' });
+  if (!ДатаОкончания) {
+    return res.status(400).json({ message: 'Не указана дата окончания' });
   }
 
   try {
@@ -27,7 +27,7 @@ exports.createReservation = async (req, res) => {
     const reservation = await Reservation.create({
       КодПользователя: req.user.id,
       ДатаБронирования: new Date(),
-      ДатаВозврата: new Date(returnDate),
+      ДатаОкончания: new Date(ДатаОкончания),
       Статус: 'Активно',
     });
 

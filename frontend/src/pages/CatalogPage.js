@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from '../utils/axios';
+import { axiosInstance } from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 
@@ -25,17 +25,6 @@ const Sidebar = styled.div`
   padding: 2rem 0 2rem 0.5rem;
 `;
 
-//const Container = styled.div`
-//  padding: 2rem 0 2rem 0;
-//  max-width: 1910px;
-//  margin: 0 auto;
-//  display: flex;
-//  gap: 4rem;
-//  h1 {
-//    color: ${({ theme }) => theme.colors.mahogany};
-//    margin-bottom: 2rem;
-//  }
-//`;
 
 const CategoriesContainer = styled.div`
   display: grid;
@@ -81,6 +70,68 @@ const MainContent = styled.div`
   display: flex;
   flex-direction: column;
   overflow-x: auto;
+`;
+
+const BooksGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+`;
+
+const BookCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
+`;
+
+const BookImage = styled.img`
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 4px;
+`;
+
+const BookInfo = styled.div`
+  margin-top: 1rem;
+`;
+
+const BookTitle = styled.h3`
+  color: ${({ theme }) => theme.colors.mahogany};
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+`;
+
+const BookAuthor = styled.p`
+  color: ${({ theme }) => theme.colors.darkGray};
+  margin: 0.5rem 0;
+`;
+
+const BookActions = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const ActionButton = styled.button`
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: ${({ theme }) => theme.colors.mahogany};
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: ${({ theme }) => theme.colors.darkMahogany};
+  }
 `;
 
 const Title = styled.h1`
@@ -155,79 +206,31 @@ const CategoryItem = styled.div`
   }
 `;
 
-const BooksGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-`;
-
-const BookCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 0.7rem 0.7rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  font-size: 0.9rem;
-  
-  ${props => props.$expanded && `
-    transform: scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  `}
-  
-  h3 {
-    color: ${({ theme }) => theme.colors.mahogany};
-    margin-bottom: 0.3rem;
-    font-size: 1rem;
-  }
-  
-  p {
-    color: ${({ theme }) => theme.colors.darkGray};
-    margin: 0.12rem 0;
-    font-size: 0.9rem;
-  }
-  
-  .description {
-    border-top: 1px solid #e0e0e0;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    color: #444;
-    font-size: 0.92rem;
-    background: #faf9f7;
-    border-radius: 0 0 8px 8px;
-  }
-`;
-
 const ButtonGroup = styled.div`
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
 `;
 
 const Button = styled.button`
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
   border: none;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
-  
-  background-color: ${({ $primary, theme }) => 
-    $primary ? theme.colors.mahogany : 'transparent'};
-  color: ${({ $primary, theme }) => 
-    $primary ? 'white' : theme.colors.mahogany};
-  border: 1px solid ${({ theme }) => theme.colors.mahogany};
+  background-color: ${({ theme }) => theme.colors.mahogany};
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
   &:hover {
-    background-color: ${({ $primary, theme }) => 
-      $primary ? theme.colors.darkMahogany : theme.colors.lightMahogany};
-    color: white;
+    background-color: ${({ theme }) => theme.colors.darkMahogany};
+    transform: translateY(-1px);
   }
 `;
-
-// Устанавливаем корневой элемент для модальных окон
-Modal.setAppElement('#root');
 
 const AddButton = styled(Button)`
   position: fixed;
@@ -264,21 +267,26 @@ const modalStyles = {
   },
 };
 
+Modal.setAppElement('#root');
+
 const CatalogPage = () => {
   const [books, setBooks] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [expandedBookId, setExpandedBookId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  const [error, setError] = useState(null);
   const [userBookings, setUserBookings] = useState([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [unavailableReason, setUnavailableReason] = useState('');
   const navigate = useNavigate();
-  
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const isAdmin = user?.role === 'admin';
-  
+  const isReader = user?.role === 'Читатель';
+
   // Получаем активные бронирования пользователя
   useEffect(() => {
     const fetchUserBookings = async () => {
@@ -286,7 +294,7 @@ const CatalogPage = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get('/api/bookings/reader', { headers });
+        const response = await axiosInstance.get('/api/bookings/reader', { headers });
         if (response.data.success) {
           // Собираем id всех книг из активных бронирований
           const activeBookIds = response.data.bookings
@@ -312,7 +320,7 @@ const CatalogPage = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await axios.get('/api/books');
+        const response = await axiosInstance.get('/api/books');
         setBooks(response.data);
       } catch (error) {
         console.error('Ошибка при загрузке книг:', error);
@@ -321,7 +329,7 @@ const CatalogPage = () => {
 
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('/api/categories');
+        const response = await axiosInstance.get('/api/categories');
         setCategories(response.data);
       } catch (error) {
         console.error('Ошибка при загрузке категорий:', error);
@@ -342,7 +350,15 @@ const CatalogPage = () => {
     }
 
     try {
-      await axios.post('/api/reservations', { bookId: book.id });
+      // Calculate return date (14 days from now)
+      const returnDate = new Date();
+      returnDate.setDate(returnDate.getDate() + 14);
+
+      await axiosInstance.post('/api/reservations', {
+        bookId: book.id,
+        dateFrom: new Date().toISOString(),
+        dateTo: returnDate.toISOString()
+      });
       setModalMessage(`Вы забронировали книгу "${book.title}" (${book.author}). Приходите за ней до конца рабочего дня.`);
       setShowModal(true);
     } catch (error) {
@@ -373,7 +389,7 @@ const CatalogPage = () => {
   const handleDelete = async (book) => {
     if (window.confirm('Вы уверены, что хотите удалить эту книгу?')) {
       try {
-        await axios.delete(`/api/books/${book.id}`);
+        await axiosInstance.delete(`/api/books/${book.id}`);
         setBooks(books.filter(b => b.id !== book.id));
       } catch (error) {
         console.error('Ошибка при удалении книги:', error);
@@ -439,11 +455,6 @@ const CatalogPage = () => {
     return { day: 'unknown', text: '' };
   };
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [unavailableReason, setUnavailableReason] = useState('');
-
   const handleBookCardClick = (bookId) => {
     setExpandedBookId(expandedBookId === bookId ? null : bookId);
   };
@@ -466,12 +477,12 @@ const CatalogPage = () => {
 
   // Вынести обновление книг и бронирований в отдельную функцию
   const fetchBooksAndBookings = async () => {
-    const response = await axios.get('/api/books');
+    const response = await axiosInstance.get('/api/books');
     setBooks(response.data);
     if (user && user.id) {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const bookingsResp = await axios.get('/api/bookings/reader', { headers });
+      const bookingsResp = await axiosInstance.get('/api/bookings/reader', { headers });
       if (bookingsResp.data.success) {
         const activeBookIds = bookingsResp.data.bookings
           .filter(b => b.status === 'Активно')
@@ -485,22 +496,23 @@ const CatalogPage = () => {
     if (!selectedBook) return;
     // Проверка на фронте перед отправкой запроса
     if (userBookings.includes(selectedBook.id) || selectedBook.status !== 'Доступна') {
-      setSuccessMessage('Книга уже недоступна для бронирования. Обновите страницу.');
+      setModalMessage('Книга уже недоступна для бронирования. Обновите страницу.');
+      setShowModal(true);
       setShowConfirmModal(false);
-      setShowModal(false);
+      setSuccessMessage(''); // Clear any previous success message
+      setSelectedBook(null);
       await fetchBooksAndBookings();
       return;
     }
     try {
       await handleReserve(selectedBook);
-      const pickup = getPickupTime();
-      setSuccessMessage(`Книга "${selectedBook.title}" (${selectedBook.author}) забронирована! Заберите её из библиотеки ${pickup.text}`);
-      setShowConfirmModal(false);
-      setShowModal(false);
-      await fetchBooksAndBookings();
+      // handleReserve already sets the modal message (success or error)
+      setShowConfirmModal(false); // Close the confirmation modal
+      // The modal with the result is shown by handleReserve
+      await fetchBooksAndBookings(); // Refresh data after attempt
     } catch (e) {
-      setSuccessMessage('Книга уже недоступна для бронирования. Обновите страницу.');
-      await fetchBooksAndBookings();
+      // handleReserve already handled the error and showed the modal
+      setShowConfirmModal(false); // Close the confirmation modal
     }
   };
 
@@ -522,7 +534,7 @@ const CatalogPage = () => {
         </CategoriesContainer>
       </Sidebar>
       <MainContent>
-        <h1 style={{marginBottom: '1.5rem', fontSize: '1.7rem', textAlign: 'left'}}>Каталог книг</h1>
+        <h1 style={{marginBottom: '1.5rem', fontSize: '1.7rem', textAlign: 'left'}}>{isAdmin ? 'Админ-панель' : 'Каталог книг'}</h1>
         <SearchBar>
           <input
             type="text"
@@ -531,47 +543,61 @@ const CatalogPage = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </SearchBar>
-        <BooksGrid>
-          {filteredBooks.map((book) => {
-            const isAvailable = book.status === 'Доступна' && !userBookings.includes(book.id);
-            return (
+        {isAdmin ? (
+          <BooksGrid>
+            {filteredBooks.map((book) => (
               <BookCard
                 key={book.id}
                 onClick={() => handleBookCardClick(book.id)}
                 style={{
-                  opacity: isAvailable ? 1 : 0.5,
+                  opacity: book.status === 'Доступна' ? 1 : 0.5,
                   cursor: 'pointer',
-                  pointerEvents: isAvailable ? 'auto' : 'none',
+                  pointerEvents: book.status === 'Доступна' ? 'auto' : 'none',
                 }}
               >
                 <h3>{book.title}</h3>
-                <p>Автор: {book.author}</p>
-                <p>Год: {book.year}</p>
-                {!isAvailable && (
-                  <p style={{ color: '#b22222', fontWeight: 'bold' }}>
-                    {userBookings.includes(book.id) ? 'Вы уже забронировали эту книгу' : getUnavailableReason(book)}
-                  </p>
-                )}
-                {expandedBookId === book.id && (
-                  <div className="description">
-                    <p>{book.description}</p>
-                  </div>
-                )}
-                <ButtonGroup>
-                  <Button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleReserveClick(book);
-                    }}
-                    disabled={!isAvailable}
-                  >
+                <p className="author">{book.author}</p>
+                <p className="year">{book.year}</p>
+                <div className="description">{book.description}</div>
+                <div className="actions">
+                  <Button onClick={() => handleEdit(book)} $primary>
+                    <i className="fas fa-edit"></i>
+                    Редактировать
+                  </Button>
+                  <Button onClick={() => handleDelete(book)}>
+                    <i className="fas fa-trash"></i>
+                    Удалить
+                  </Button>
+                </div>
+              </BookCard>
+            ))}
+          </BooksGrid>
+        ) : (
+          <BooksGrid>
+            {filteredBooks.map((book) => (
+              <BookCard
+                key={book.id}
+                onClick={() => handleBookCardClick(book.id)}
+                style={{
+                  opacity: book.status === 'Доступна' ? 1 : 0.5,
+                  cursor: 'pointer',
+                  pointerEvents: book.status === 'Доступна' ? 'auto' : 'none',
+                }}
+              >
+                <h3>{book.title}</h3>
+                <p className="author">{book.author}</p>
+                <p className="year">{book.year}</p>
+                <div className="description">{book.description}</div>
+                <div className="actions">
+                  <Button onClick={() => handleReserve(book)} $primary>
+                    <i className="fas fa-bookmark"></i>
                     Забронировать
                   </Button>
-                </ButtonGroup>
+                </div>
               </BookCard>
-            );
-          })}
-        </BooksGrid>
+            ))}
+          </BooksGrid>
+        )}
       </MainContent>
       <Modal
         isOpen={showModal || showConfirmModal || !!successMessage}
@@ -579,7 +605,6 @@ const CatalogPage = () => {
           setShowModal(false);
           setShowConfirmModal(false);
           setSuccessMessage('');
-          setUnavailableReason('');
           setSelectedBook(null);
           setModalMessage('');
         }}

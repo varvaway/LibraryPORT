@@ -10,6 +10,7 @@ router.get('/', booksController.getAllBooks);
 router.get('/categories', booksController.getAllCategories);
 
 // Получить книгу по ID (публичный доступ)
+router.get('/', booksController.getAllBooks);
 router.get('/:id', booksController.getBookById);
 
 // Создать новую книгу (только админ)

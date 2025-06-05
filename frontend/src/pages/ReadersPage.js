@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import axios from '../utils/axios';
-import { Table, TableContainer, PageHeader, Controls, SearchInput, ActionButton } from '../components/StyledTable';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../components/ConfirmationModal';
 import * as XLSX from 'xlsx';
@@ -48,56 +47,15 @@ const DropdownContent = styled.div`
 const DropdownItem = styled.button`
   width: 100%;
   padding: 12px 16px;
+  text-align: left;
   border: none;
   background: none;
-  text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s;
-
   &:hover {
     background-color: #f5f5f5;
   }
-`;
-
-const Button = styled.button`
-  padding: 8px 16px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-
-  &.primary {
-    background-color: #4CAF50;
-    color: white;
-    &:hover {
-      background-color: #45a049;
-    }
-  }
-
-  &.edit {
-    background-color: #2196F3;
-    color: white;
-    margin-right: 8px;
-    &:hover {
-      background-color: #1976D2;
-    }
-  }
-
-  &.delete {
-    background-color: #f44336;
-    color: white;
-    &:hover {
-      background-color: #d32f2f;
-    }
-  }
-
-  &.export {
-    background-color: ${({ theme }) => theme.colors.pistachioCream};
-    color: black;
-    &:hover {
-      opacity: 0.9;
-    }
+  &:active {
+    background-color: #e0e0e0;
   }
 `;
 
@@ -109,16 +67,16 @@ const Modal = styled.div`
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
 `;
 
 const ModalContent = styled.div`
   background-color: white;
-  padding: 24px;
+  padding: 20px;
   border-radius: 8px;
-  width: 100%;
+  width: 90%;
   max-width: 500px;
 `;
 
@@ -138,30 +96,31 @@ const Input = styled.input`
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  &:focus {
+    outline: none;
+    border-color: #4a90e2;
+  }
 `;
 
 const ModalButtons = styled.div`
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 20px;
 `;
 
-const Select = styled.select`
-  padding: 8px 12px;
-  border: 1px solid #ddd;
+const Button = styled.button`
+  padding: 8px 16px;
+  border: none;
   border-radius: 4px;
-  background-color: white;
   cursor: pointer;
-  
-  &:focus {
-    outline: none;
-    border-color: #0066cc;
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+  background-color: ${props => props.className === 'primary' ? '#4a90e2' : '#f5f5f5'};
+  color: ${props => props.className === 'primary' ? 'white' : '#333'};
+  &:hover {
+    background-color: ${props => props.className === 'primary' ? '#357abd' : '#e0e0e0'};
   }
 `;
 
-const ReadersTable = styled.table`
+const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   
@@ -174,62 +133,217 @@ const ReadersTable = styled.table`
   th {
     background-color: #f5f5f5;
     font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    
+    &:hover {
+      background-color: #e0e0e0;
+    }
   }
 
   tr:hover {
     background-color: #f9f9f9;
   }
+`;
 
-  .actions {
-    width: 180px;
-    text-align: right;
+const TableContainer = styled.div`
+  overflow-x: auto;
+`;
+
+const Controls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+`;
+
+const SearchInput = styled.input`
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex: 1;
+  max-width: 400px;
+`;
+
+const ActionButton = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #4a90e2;
+  color: white;
+  
+  &:hover {
+    background-color: #357abd;
   }
 `;
 
 const ReadersPage = () => {
-  const navigate = useNavigate();
   const [readers, setReaders] = useState([]);
-  const [sortField, setSortField] = useState('lastName');
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingReader, setEditingReader] = useState(null);
+  const [modalType, setModalType] = useState('');
+  const [selectedReader, setSelectedReader] = useState(null);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: ''
+    Фамилия: '',
+    Имя: '',
+    Телефон: '',
+    ЭлектроннаяПочта: ''
   });
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
   const [readerToDelete, setReaderToDelete] = useState(null);
+  const [readerIdToDelete, setReaderIdToDelete] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+  const [sortConfig, setSortConfig] = useState({
+    key: 'Фамилия',
+    direction: 'asc'
+  });
+
+
 
   useEffect(() => {
-    const loadReaders = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get('/api/readers');
-        if (response.data.success) {
-          setReaders(response.data.readers.map(reader => ({
-            id: reader.КодПользователя,
-            firstName: reader.Имя,
-            lastName: reader.Фамилия,
-            email: reader.ЭлектроннаяПочта,
-            phone: reader.Телефон
-          })));
-        }
-      } catch (error) {
-        console.error('Ошибка при загрузке читателей:', error);
-        if (error.response?.status === 401) {
-          navigate('/');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchReaders();
+  }, []);
 
-    loadReaders();
-  }, [navigate]);
+  const fetchReaders = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Необходима авторизация для доступа к данным читателей');
+        return;
+      }
+
+      const response = await axios.get('/api/readers', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        toast.error('Сессия истекла. Пожалуйста, войдите в систему снова.');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+
+      if (response.data.success) {
+        setReaders(response.data.readers);
+      } else {
+        toast.error(response.data.message || 'Не удалось загрузить данные читателей');
+      }
+    } catch (error) {
+      console.error('Ошибка при получении читателей:', error);
+      if (error.response?.status === 401) {
+        toast.error('Сессия истекла. Пожалуйста, войдите в систему снова.');
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        toast.error('Не удалось загрузить данные читателей');
+      }
+    }
+  };
+
+  const handleReaderClick = (reader) => {
+    setSelectedReader(reader);
+    navigate(`/readers/${reader._id}`);
+  };
+
+  const filteredReaders = readers.filter(reader =>
+    reader.Фамилия.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    reader.Имя.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    reader.Телефон.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    reader.ЭлектроннаяПочта.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const sortedReaders = [...filteredReaders].sort((a, b) => {
+    const key = sortConfig.key;
+    const direction = sortConfig.direction === 'asc' ? 1 : -1;
+    
+    return direction * a[key].localeCompare(b[key]);
+  });
+
+  const toggleModal = (type) => {
+    setModalType(type);
+    setIsModalOpen(!isModalOpen);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const method = modalType === 'edit' ? 'put' : 'post';
+      const url = modalType === 'edit' 
+        ? `/api/readers/${selectedReader.КодПользователя}` 
+        : '/api/readers';
+
+      const data = {
+        Имя: formData.Имя,
+        Фамилия: formData.Фамилия,
+        Телефон: formData.Телефон,
+        ЭлектроннаяПочта: formData.ЭлектроннаяПочта
+      };
+
+      const response = await axios[method](
+        url,
+        data,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success(modalType === 'edit' 
+          ? 'Читатель успешно обновлен' 
+          : 'Читатель успешно добавлен');
+        setIsModalOpen(false);
+        fetchReaders();
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении читателя:', error);
+      toast.error('Ошибка при сохранении читателя');
+    }
+  };
+
+  const handleDelete = (reader) => {
+    setReaderToDelete(reader);
+    setReaderIdToDelete(reader.КодПользователя);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(`/api/readers/${readerIdToDelete}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data.success) {
+        toast.success('Читатель успешно удален');
+        setDeleteModalOpen(false);
+        setReaderIdToDelete(null);
+        fetchReaders();
+      }
+    } catch (error) {
+      console.error('Ошибка при удалении читателя:', error);
+      toast.error('Ошибка при удалении читателя');
+    }
+  };
 
   const handleExportExcel = () => {
     const date = new Date().toISOString().split('T')[0];
@@ -237,10 +351,10 @@ const ReadersPage = () => {
     setIsDropdownOpen(false);
 
     const data = filteredReaders.map(reader => ({
-      'Фамилия': reader.lastName,
-      'Имя': reader.firstName,
-      'Email': reader.email,
-      'Телефон': reader.phone
+      'Фамилия': reader.Фамилия,
+      'Имя': reader.Имя,
+      'Email': reader.ЭлектроннаяПочта,
+      'Телефон': reader.Телефон
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -253,10 +367,7 @@ const ReadersPage = () => {
     const date = new Date().toISOString().split('T')[0];
     const fileName = `выгрузка_читателей_от_${date}.doc`;
 
-    // Создаем таблицу в HTML формате
     let tableHtml = '<table style="width:100%; border-collapse: collapse;">';
-    
-    // Заголовки
     tableHtml += '<tr style="background-color: #f5f5f5;">';
     tableHtml += '<th style="border: 1px solid #ddd; padding: 8px;">Фамилия</th>';
     tableHtml += '<th style="border: 1px solid #ddd; padding: 8px;">Имя</th>';
@@ -264,307 +375,176 @@ const ReadersPage = () => {
     tableHtml += '<th style="border: 1px solid #ddd; padding: 8px;">Телефон</th>';
     tableHtml += '</tr>';
 
-    // Данные
     filteredReaders.forEach(reader => {
       tableHtml += '<tr>';
-      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.lastName}</td>`;
-      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.firstName}</td>`;
-      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.email}</td>`;
-      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.phone}</td>`;
+      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.Фамилия}</td>`;
+      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.Имя}</td>`;
+      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.ЭлектроннаяПочта || ''}</td>`;
+      tableHtml += `<td style="border: 1px solid #ddd; padding: 8px;">${reader.Телефон || ''}</td>`;
       tableHtml += '</tr>';
     });
     tableHtml += '</table>';
 
-    // Создаем документ для скачивания
-    const blob = new Blob([tableHtml], { type: 'application/msword' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setIsDropdownOpen(false);
+    const blob = new Blob([`<html><body>${tableHtml}</body></html>`], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const filteredReaders = readers.filter(reader => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      reader.lastName.toLowerCase().includes(searchLower) ||
-      reader.firstName.toLowerCase().includes(searchLower) ||
-      reader.email.toLowerCase().includes(searchLower) ||
-      reader.phone.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const sortedReaders = [...filteredReaders].sort((a, b) => {
-    if (sortField === 'lastName') {
-      return a.lastName.localeCompare(b.lastName);
-    } else if (sortField === 'firstName') {
-      return a.firstName.localeCompare(b.firstName);
-    }
-    return 0;
-  });
-
-  const handleDeleteClick = (reader, event) => {
-    event.stopPropagation();
-    setReaderToDelete(reader);
-    setDeleteModalOpen(true);
+  const handleSort = (key) => {
+    const direction = sortConfig.key === key && sortConfig.direction === 'asc' 
+      ? 'desc' 
+      : 'asc';
+    setSortConfig({ key, direction });
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      if (!readerToDelete) return;
-
-      // Получаем детальную информацию о читателе, включая бронирования
-      const readerResponse = await axios.get(`/api/readers/${readerToDelete.id}`);
-      const activeReservations = readerResponse.data.reservations?.filter(
-        reservation => reservation.Статус === 'Активно'
-      ) || [];
-
-      // Если есть активные бронирования, удаляем их
-      if (activeReservations.length > 0) {
-        for (const reservation of activeReservations) {
-          await axios.delete(`/api/reservations/${reservation.КодБронирования}`);
-        }
-      }
-
-      // Затем удаляем самого читателя
-      await axios.delete(`/api/readers/${readerToDelete.id}`);
-      setReaders(readers.filter(reader => reader.id !== readerToDelete.id));
-
-      const message = activeReservations.length > 0 ?
-        'Читатель и его бронирования были удалены из библиотеки' :
-        'Читатель был удален из библиотеки';
-
-      setDeleteModalOpen(false);
-      setReaderToDelete(null);
-
-      toast.success(message, {
-        position: 'top-right',
-        autoClose: 3000
-      });
-    } catch (error) {
-      console.error('Ошибка при удалении читателя:', error);
-      toast.error('Ошибка при удалении читателя');
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setIsDropdownOpen(false);
     }
   };
 
-  const handleEdit = (reader, event) => {
-    event.stopPropagation();
-    setEditingReader(reader);
-    setFormData({
-      firstName: reader.firstName,
-      lastName: reader.lastName,
-      email: reader.email,
-      phone: reader.phone
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleCreate = () => {
-    setEditingReader(null);
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: ''
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        Имя: formData.firstName,
-        Фамилия: formData.lastName,
-        ЭлектроннаяПочта: formData.email,
-        Телефон: formData.phone,
-        Роль: 'Читатель'
-      };
-
-      if (editingReader) {
-        const response = await axios.put(`/api/readers/${editingReader.id}`, payload);
-        if (response.data.success) {
-          const updatedReader = response.data.reader;
-          setReaders(readers.map(reader =>
-            reader.id === editingReader.id ? {
-              ...reader,
-              firstName: updatedReader.Имя,
-              lastName: updatedReader.Фамилия,
-              email: updatedReader.ЭлектроннаяПочта,
-              phone: updatedReader.Телефон
-            } : reader
-          ));
-          toast.success('Читатель успешно обновлен');
-        }
-      } else {
-        console.log('Отправка данных:', {
-          Имя: formData.firstName,
-          Фамилия: formData.lastName,
-          ЭлектроннаяПочта: formData.email,
-          Телефон: formData.phone || null,
-          Роль: 'Читатель',
-          ХэшПароля: 'temporary'
-        });
-        
-        const response = await axios.post('/api/readers', {
-          Имя: formData.firstName,
-          Фамилия: formData.lastName,
-          ЭлектроннаяПочта: formData.email,
-          Телефон: formData.phone || null,
-          Роль: 'Читатель',
-          ХэшПароля: 'temporary'
-        });
-        if (response.data.success) {
-          const newReader = response.data.reader;
-          setReaders([...readers, {
-            id: newReader.КодПользователя,
-            firstName: newReader.Имя,
-            lastName: newReader.Фамилия,
-            email: newReader.ЭлектроннаяПочта,
-            phone: newReader.Телефон
-          }]);
-          setFormData({
-            firstName: '',
-            lastName: '',
-            email: '',
-            phone: ''
-          });
-          setIsModalOpen(false);
-          toast.success('Читатель успешно добавлен');
-        }
-      }
-
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Ошибка при сохранении читателя:', error);
-      toast.error('Ошибка при сохранении читателя');
-    }
-  };
-
-  const handleReaderClick = (id) => {
-    navigate(`/reader/${id}`);
-  };
-
-  if (loading) {
-    return (
-      <Container>
-        <Title>Загрузка...</Title>
-      </Container>
-    );
-  }
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <Container>
-      <PageHeader>
-        <h1>Читатели</h1>
-        <Controls>
-          <SearchInput
-            type="text"
-            placeholder="Поиск читателей..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <ActionButton $primary onClick={handleCreate}>
+      <Title>Читатели</Title>
+      <Controls>
+        <SearchInput
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Поиск по фамилии, имени, телефону или email..."
+        />
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <ActionButton onClick={() => { 
+            setModalType('add'); 
+            setFormData({
+              Фамилия: '',
+              Имя: '',
+              Телефон: '',
+              ЭлектроннаяПочта: ''
+            });
+            setIsModalOpen(true); 
+          }}>
             Добавить читателя
           </ActionButton>
-          <Select value={sortField} onChange={(e) => setSortField(e.target.value)}>
-            <option value="lastName">Фамилии</option>
-            <option value="firstName">Имени</option>
-          </Select>
-          <DropdownContainer>
-            <ActionButton 
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              style={{ backgroundColor: '#6B4B4B', color: 'white' }}
-            >
-              Скачать
+          <DropdownContainer ref={dropdownRef}>
+            <ActionButton onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+              Экспорт
             </ActionButton>
             <DropdownContent isOpen={isDropdownOpen}>
-              <DropdownItem onClick={handleExportExcel}>Экспорт в Excel</DropdownItem>
-              <DropdownItem onClick={handleExportWord}>Экспорт в Word</DropdownItem>
+              <DropdownItem onClick={handleExportExcel}>Excel</DropdownItem>
+              <DropdownItem onClick={handleExportWord}>Word</DropdownItem>
             </DropdownContent>
           </DropdownContainer>
-        </Controls>
-      </PageHeader>
+        </div>
+      </Controls>
 
-      <TableContainer>
-        <ReadersTable>
-          <thead>
-            <tr>
-              <th>Фамилия</th>
-              <th>Имя</th>
-              <th>Email</th>
-              <th>Телефон</th>
-              <th className="actions">Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedReaders.map((reader) => (
-              <tr key={reader.id} onClick={() => handleReaderClick(reader.id)}>
-                <td>{reader.lastName}</td>
-                <td>{reader.firstName}</td>
-                <td>{reader.email}</td>
-                <td>{reader.phone}</td>
-                <td className="actions">
-                  <Button className="edit" onClick={(e) => handleEdit(reader, e)}>
-                    Редактировать
-                  </Button>
-                  <Button className="delete" onClick={(e) => handleDeleteClick(reader, e)}>
-                    Удалить
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {sortedReaders.length === 0 && (
+      <ReadersContainer>
+        <TableContainer>
+          <Table>
+            <thead>
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center' }}>
-                  Читатели не найдены
-                </td>
+                <th onClick={() => handleSort('Фамилия')}>
+                  Фамилия {sortConfig.key === 'Фамилия' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th onClick={() => handleSort('Имя')}>
+                  Имя {sortConfig.key === 'Имя' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th>Телефон</th>
+                <th>Email</th>
+                <th>Действия</th>
               </tr>
-            )}
-          </tbody>
-        </ReadersTable>
-      </TableContainer>
+            </thead>
+            <tbody>
+              {sortedReaders.map((reader) => (
+                <tr key={reader.КодПользователя} onClick={() => handleReaderClick(reader)}>
+                  <td>{reader.Фамилия}</td>
+                  <td>{reader.Имя}</td>
+                  <td>{reader.Телефон}</td>
+                  <td>{reader.ЭлектроннаяПочта}</td>
+                  <td>
+                    <Button 
+                      className="edit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedReader(reader);
+                        setFormData({
+                          Фамилия: reader.Фамилия,
+                          Имя: reader.Имя,
+                          Телефон: reader.Телефон,
+                          ЭлектроннаяПочта: reader.ЭлектроннаяПочта
+                        });
+                        setModalType('edit');
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      Редактировать
+                    </Button>
+                    <Button 
+                      className="delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(reader);
+                      }}
+                    >
+                      Удалить
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableContainer>
+      </ReadersContainer>
 
       {isModalOpen && (
         <Modal>
           <ModalContent>
-            <h2>{editingReader ? 'Редактировать читателя' : 'Создать читателя'}</h2>
+            <h2>{modalType === 'edit' ? 'Редактирование читателя' : 'Создание нового читателя'}</h2>
             <Form onSubmit={handleSubmit}>
               <FormGroup>
-                <label>Фамилия:</label>
+                <label>Фамилия</label>
                 <Input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  name="Фамилия"
+                  value={formData.Фамилия}
+                  onChange={handleInputChange}
                   required
                 />
               </FormGroup>
               <FormGroup>
-                <label>Имя:</label>
+                <label>Имя</label>
                 <Input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  name="Имя"
+                  value={formData.Имя}
+                  onChange={handleInputChange}
                   required
                 />
               </FormGroup>
               <FormGroup>
-                <label>Email:</label>
+                <label>Телефон</label>
                 <Input
+                  name="Телефон"
+                  value={formData.Телефон}
+                  onChange={handleInputChange}
+                  required
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Электронная почта</label>
+                <Input
+                  name="ЭлектроннаяПочта"
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Телефон:</label>
-                <Input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.ЭлектроннаяПочта}
+                  onChange={handleInputChange}
                   required
                 />
               </FormGroup>
@@ -573,7 +553,7 @@ const ReadersPage = () => {
                   Отмена
                 </Button>
                 <Button type="submit" className="primary">
-                  {editingReader ? 'Сохранить' : 'Создать'}
+                  Сохранить
                 </Button>
               </ModalButtons>
             </Form>
@@ -581,18 +561,15 @@ const ReadersPage = () => {
         </Modal>
       )}
 
-      <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => {
-          setDeleteModalOpen(false);
-          setReaderToDelete(null);
-        }}
-        title="Удаление читателя"
-      >
-        <p>Вы действительно хотите удалить читателя {readerToDelete?.lastName} {readerToDelete?.firstName} из базы?</p>
-        <p style={{ marginTop: '12px', color: '#d32f2f' }}>Все его активные бронирования будут также удалены.</p>
-      </ConfirmationModal>
+      {deleteModalOpen && (
+        <ConfirmationModal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={handleDeleteConfirm}
+          title="Удаление читателя"
+          message={`Вы уверены, что хотите удалить читателя ${readerToDelete?.Фамилия} ${readerToDelete?.Имя}?`}
+        />
+      )}
     </Container>
   );
 };

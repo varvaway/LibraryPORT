@@ -5,7 +5,7 @@ const Reservation = sequelize.define('Reservation', {
   КодБронирования: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: true,
+    allowNull: false,
     field: 'КодБронирования'
   },
   КодПользователя: {
@@ -22,10 +22,19 @@ const Reservation = sequelize.define('Reservation', {
     type: DataTypes.STRING(50),
     allowNull: false,
     field: 'Статус'
+  },
+  ДатаОкончания: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    field: 'ДатаОкончания'
   }
 }, {
   tableName: 'Бронирования',
-  timestamps: false
+  timestamps: false,
+  schema: 'dbo',
+  freezeTableName: true
 });
+
+// Ассоциация уже определена через sequelize.models
 
 module.exports = Reservation;

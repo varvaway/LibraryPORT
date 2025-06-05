@@ -1,14 +1,17 @@
 import axios from 'axios';
 
-const instance = axios.create({
+const axiosInstance = axios.create({
   baseURL: 'http://localhost:3001',
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
+export default axiosInstance;
+export { axiosInstance };
+
 // Добавляем перехватчик запросов
-instance.interceptors.request.use(
+axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -32,7 +35,7 @@ instance.interceptors.request.use(
   }
 );
 
-instance.interceptors.response.use(
+axiosInstance.interceptors.response.use(
   (response) => {
     console.log('Получен ответ:', response.status, response.data);
     return response;
@@ -48,10 +51,14 @@ instance.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      // Вместо перезагрузки страницы просто возвращаем ошибку
+      return Promise.reject({
+        ...error,
+        unauthorized: true
+      });
     }
 
     return Promise.reject(error);
   }
 );
 
-export default instance;

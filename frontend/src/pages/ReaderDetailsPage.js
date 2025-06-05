@@ -146,7 +146,7 @@ const ReaderDetailsPage = () => {
           ))}
           {reservations.length === 0 && (
             <tr>
-              <td colSpan="5" style={{ textAlign: 'center' }}>
+              <td colSpan="4" style={{ textAlign: 'center' }}>
                 Нет активных бронирований
               </td>
             </tr>

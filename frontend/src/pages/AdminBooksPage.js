@@ -1,223 +1,351 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
 import axios from '../utils/axios';
+import { toast } from 'react-toastify';
+import styled from 'styled-components';
+import EditBookModal from '../components/EditBookModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 
-const Container = styled.div`
+const PageContainer = styled.div`
   padding: 2rem;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
 `;
 
 const Title = styled.h1`
   font-size: 2rem;
-  color: ${({ theme }) => theme.colors.mahogany};
-`;
-
-const SearchBar = styled.input`
-  padding: 0.5rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 300px;
-  font-size: 1rem;
+  margin-bottom: 1rem;
 `;
 
 const AddButton = styled.button`
-  background: ${({ theme }) => theme.colors.mahogany};
+  background-color: #4CAF50;
   color: white;
-  border: none;
   padding: 0.5rem 1rem;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
-  
-  &:hover {
-    background: ${({ theme }) => theme.colors.darkMahogany};
-  }
-`;
-
-const BooksGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-`;
-
-const BookCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-`;
-
-const BookActions = styled.div`
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const BooksTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
   margin-top: 1rem;
+
+  th, td {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f5f5f5;
+  }
 `;
 
-const ActionButton = styled.button`
+const TableHeader = styled.th`
+  cursor: pointer;
   padding: 0.5rem;
+`;
+
+const Button = styled.button`
+  background-color: ${props => props.$primary ? '#4CAF50' : '#f44336'};
+  color: white;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
-  
-  &.edit {
-    background: #f0ad4e;
-    color: white;
-    
-    &:hover {
-      background: #ec971f;
-    }
-  }
-  
-  &.delete {
-    background: #d9534f;
-    color: white;
-    
-    &:hover {
-      background: #c9302c;
-    }
-  }
 `;
 
-const CategoryList = styled.div`
+const ButtonGroup = styled.div`
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-`;
-
-const CategoryButton = styled.button`
-  padding: 0.5rem 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.mahogany};
-  border-radius: 20px;
-  background: ${({ active, theme }) => active ? theme.colors.mahogany : 'white'};
-  color: ${({ active }) => active ? 'white' : '#666'};
-  cursor: pointer;
-  
-  &:hover {
-    background: ${({ theme }) => theme.colors.mahogany};
-    color: white;
-  }
+  gap: 0.5rem;
 `;
 
 const AdminBooksPage = () => {
   const [books, setBooks] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sortField, setSortField] = useState('Название');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editBook, setEditBook] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
 
   useEffect(() => {
-    // Загрузка книг и категорий при монтировании
-    loadBooks();
-    loadCategories();
+    const fetchBooks = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get('/api/books');
+        console.log('Ответ API:', response.data);
+        console.log('Структура API:', typeof response.data, Array.isArray(response.data));
+        const booksData = Array.isArray(response.data) ? response.data : [];
+        console.log('Книги после преобразования:', booksData);
+        console.log('Первая книга:', booksData[0]);
+        console.log('Поля первой книги:', Object.keys(booksData[0]));
+        setBooks(booksData);
+        setFilteredBooks(booksData);
+      } catch (error) {
+        console.error('Ошибка при загрузке книг:', error);
+        toast.error('Ошибка при загрузке книг');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBooks();
   }, []);
 
-  const loadBooks = async () => {
-    try {
-      const response = await axios.get('/api/books');
-      setBooks(response.data);
-    } catch (error) {
-      console.error('Ошибка при загрузке книг:', error);
+  useEffect(() => {
+    const filtered = books.filter(book => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        (book.Название || '').toLowerCase().includes(searchLower) ||
+        (book.Описание || '').toLowerCase().includes(searchLower) ||
+        (book.ISBN || '').toLowerCase().includes(searchLower)
+      );
+    });
+    setFilteredBooks(filtered);
+  }, [books, searchTerm]);
+
+  const handleSort = (field) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
     }
   };
 
-  const loadCategories = async () => {
+  const handleAdd = () => {
+    setEditBook({
+      КодКниги: '',
+      Название: '',
+      Описание: '',
+      ГодИздания: '',
+      ISBN: '',
+      Статус: 'Доступна',
+      Категория: '',
+      Автор: ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEdit = (book) => {
+    const bookData = {
+      КодКниги: book.id,
+      Название: book.title,
+      Описание: book.description,
+      ГодИздания: book.year,
+      ISBN: book.isbn,
+      Статус: book.status || 'Доступна',
+      Автор: book.author || '',
+      Категория: book.categoryId || ''
+    };
+    setEditBook(bookData);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!bookToDelete) return;
+
     try {
-      const response = await axios.get('/api/categories');
-      setCategories(response.data);
+      await axios.delete(`/api/books/${bookToDelete.КодКниги}`);
+      toast.success('Книга успешно удалена');
+      setBooks(books.filter(book => book.КодКниги !== bookToDelete.КодКниги));
+      setFilteredBooks(filteredBooks.filter(book => book.КодКниги !== bookToDelete.КодКниги));
     } catch (error) {
-      console.error('Ошибка при загрузке категорий:', error);
+      console.error('Ошибка при удалении книги:', error);
+      toast.error('Ошибка при удалении книги');
+    } finally {
+      setDeleteModalOpen(false);
+      setBookToDelete(null);
     }
   };
 
-  const handleAddBook = () => {
-    // TODO: Реализовать добавление книги
-  };
+  const handleSave = async (bookData) => {
+    try {
+      console.log('Данные для сохранения:', bookData);
+      let response;
+      const bookDataToSend = {
+        Название: bookData.Название || '',
+        Описание: bookData.Описание || '',
+        ГодИздания: bookData.ГодИздания || '',
+        ISBN: bookData.ISBN || '',
+        Статус: bookData.Статус || 'Доступна',
+        Автор: bookData.Автор || '',
+        Категория: bookData.Категория || null,
+        КодКниги: bookData.КодКниги
+      };
 
-  const handleEditBook = (bookId) => {
-    // TODO: Реализовать редактирование книги
-  };
-
-  const handleDeleteBook = async (bookId) => {
-    if (window.confirm('Вы уверены, что хотите удалить эту книгу?')) {
-      try {
-        await axios.delete(`/api/books/${bookId}`);
-        loadBooks(); // Перезагрузить список книг
-      } catch (error) {
-        console.error('Ошибка при удалении книги:', error);
+      if (bookData.id) {
+        response = await axios.put(`/api/books/${bookData.id}`, bookDataToSend);
+      } else {
+        response = await axios.post('/api/books', bookDataToSend);
       }
+
+      const updatedBook = response.data;
+      
+      if (bookData.id) {
+        setBooks(books.map(book => 
+          book.id === bookData.id ? updatedBook : book
+        ));
+        setFilteredBooks(filteredBooks.map(book => 
+          book.id === bookData.id ? updatedBook : book
+        ));
+      } else {
+        setBooks([...books, updatedBook]);
+        setFilteredBooks([...filteredBooks, updatedBook]);
+      }
+
+      setIsEditModalOpen(false);
+      toast.success('Книга успешно сохранена');
+    } catch (error) {
+      console.error('Ошибка при сохранении книги:', error);
+      toast.error('Ошибка при сохранении книги');
     }
   };
 
-  const filteredBooks = books.filter(book => {
-    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
-    const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const sortedBooks = Array.isArray(filteredBooks) ? filteredBooks.sort((a, b) => {
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    const fieldA = a[sortField] || '';
+    const fieldB = b[sortField] || '';
+    return fieldA.localeCompare(fieldB) * direction;
+  }) : [];
 
   return (
-    <Container>
-      <Header>
-        <Title>Управление книгами</Title>
-        <SearchBar
+    <PageContainer>
+      <Title>Книги</Title>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+        <input
           type="text"
-          placeholder="Поиск по названию или автору..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Поиск..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            flex: 1
+          }}
         />
-        <AddButton onClick={handleAddBook}>Добавить новую книгу</AddButton>
-      </Header>
+        <AddButton onClick={handleAdd}>
+          <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i>
+          Добавить книгу
+        </AddButton>
+      </div>
+      {!isLoading ? (
+        <div>
+          <p>Отображаемые книги: {filteredBooks.length}</p>
+          <p>Сортировка по: {sortField} ({sortDirection})</p>
+          <BooksTable>
+            <thead>
+              <tr>
+                <TableHeader onClick={() => handleSort('title')}>
+                  Название
+                  {sortField === 'title' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <TableHeader onClick={() => handleSort('author')}>
+                  Автор
+                  {sortField === 'author' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <TableHeader onClick={() => handleSort('description')}>
+                  Описание
+                  {sortField === 'description' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <TableHeader onClick={() => handleSort('year')}>
+                  Год издания
+                  {sortField === 'year' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <TableHeader onClick={() => handleSort('isbn')}>
+                  ISBN
+                  {sortField === 'isbn' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <TableHeader onClick={() => handleSort('categoryName')}>
+                  Категория
+                  {sortField === 'categoryName' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <TableHeader onClick={() => handleSort('status')}>
+                  Статус
+                  {sortField === 'status' && (
+                    sortDirection === 'asc' ? '↑' : '↓'
+                  )}
+                </TableHeader>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.isArray(filteredBooks) && filteredBooks.length > 0 ? (
+                filteredBooks.map((book, index) => (
+                  <tr key={book.id || `book-${index}`}>
+                    <td>{book.title || 'Нет данных'}</td>
+                    <td>{book.author || 'Нет данных'}</td>
+                    <td>{book.description || 'Нет данных'}</td>
+                    <td>{book.year || 'Нет данных'}</td>
+                    <td>{book.isbn || 'Нет данных'}</td>
+                    <td>{book.categoryName || 'Нет данных'}</td>
+                    <td>{book.status || 'Нет данных'}</td>
+                    <td>
+                      <ButtonGroup>
+                        <Button $primary onClick={() => handleEdit(book)}>
+                          <i className="fas fa-edit" style={{ marginRight: '0.5rem' }}></i>
+                          Редактировать
+                        </Button>
+                        <Button onClick={() => {
+                          setBookToDelete(book);
+                          setDeleteModalOpen(true);
+                        }}>
+                          <i className="fas fa-trash" style={{ marginRight: '0.5rem' }}></i>
+                          Удалить
+                        </Button>
+                      </ButtonGroup>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center' }}>
+                    Нет книг для отображения
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </BooksTable>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      )}
+      <EditBookModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        book={editBook}
+        onSave={handleSave}
+      />
 
-      <CategoryList>
-        <CategoryButton
-          active={selectedCategory === 'all'}
-          onClick={() => setSelectedCategory('all')}
-        >
-          Все категории
-        </CategoryButton>
-        {categories.map(category => (
-          <CategoryButton
-            key={category.id}
-            active={selectedCategory === category.id}
-            onClick={() => setSelectedCategory(category.id)}
-          >
-            {category.name}
-          </CategoryButton>
-        ))}
-      </CategoryList>
-
-      <BooksGrid>
-        {filteredBooks.map(book => (
-          <BookCard key={book.id}>
-            <h3>{book.title}</h3>
-            <p>{book.author}</p>
-            <p>Категория: {book.category}</p>
-            <BookActions>
-              <ActionButton
-                className="edit"
-                onClick={() => handleEditBook(book.id)}
-              >
-                Редактировать
-              </ActionButton>
-              <ActionButton
-                className="delete"
-                onClick={() => handleDeleteBook(book.id)}
-              >
-                Удалить
-              </ActionButton>
-            </BookActions>
-          </BookCard>
-        ))}
-      </BooksGrid>
-    </Container>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Удаление книги"
+        message="Вы уверены, что хотите удалить эту книгу?"
+      />
+    </PageContainer>
   );
 };
 
