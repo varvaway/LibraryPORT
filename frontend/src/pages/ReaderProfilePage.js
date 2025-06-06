@@ -19,7 +19,7 @@ const Container = styled.div`
 
 const Title = styled.h1`
   text-align: center;
-  color: #6b4423;
+  color: #442727;
   font-size: 2.5em;
   margin-bottom: 2rem;
 `;
@@ -71,15 +71,15 @@ const ButtonGroup = styled.div`
 
 const Button = styled.button`
   padding: 8px 16px;
-  background: ${props => props.$primary ? '#6b4423' : '#fff'};
-  color: ${props => props.$primary ? '#fff' : '#6b4423'};
-  border: 1px solid #6b4423;
+  background: ${props => props.$primary ? '#442727' : '#fff'};
+  color: ${props => props.$primary ? '#fff' : '#442727'};
+  border: 1px solid #442727;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
 
   &:hover {
-    background: ${props => props.$primary ? '#8b5e3c' : '#f9f9f9'};
+    background: ${props => props.$primary ? '#5a3434' : '#f9f9f9'};
   }
 `;
 
@@ -97,7 +97,7 @@ const ReservationSection = styled.div`
   height: fit-content;
 
   h2 {
-    color: #6b4423;
+    color: #442727;
     font-size: 1.8em;
     margin-bottom: 1.5rem;
     text-align: center;
@@ -117,19 +117,19 @@ const ReservationItem = styled.div`
   box-shadow: none;
 
   h3 {
-    color: #6b4423;
+    color: #442727;
     font-size: 1.4em;
     margin-bottom: 0.5rem;
   }
 
   p {
-    color: #666;
+    color: #442727;
     margin: 0.3rem 0;
     font-size: 1.1em;
   }
 
   .dates {
-    color: #8b5e3c;
+    color: #442727;
     font-style: italic;
   }
 

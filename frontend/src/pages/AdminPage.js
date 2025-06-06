@@ -9,7 +9,7 @@ const Container = styled.div`
 
 const Title = styled.h1`
   text-align: center;
-  color: #6b4423;
+  color: #442727;
   font-size: 2em;
   margin-bottom: 1.5rem;
 `;
@@ -64,16 +64,16 @@ const ButtonGroup = styled.div`
 
 const Button = styled.button`
   padding: 6px 14px;
-  background: ${props => props.$primary ? '#6b4423' : '#fff'};
-  color: ${props => props.$primary ? '#fff' : '#6b4423'};
-  border: 1px solid #6b4423;
+  background: ${props => props.$primary ? '#442727' : '#fff'};
+  color: ${props => props.$primary ? '#fff' : '#442727'};
+  border: 1px solid #442727;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
   transition: all 0.2s;
 
   &:hover {
-    background: ${props => props.$primary ? '#8b5e3c' : '#f9f9f9'};
+    background: ${props => props.$primary ? '#5a3434' : '#f9f9f9'};
     transform: translateY(-1px);
   }
 `;
@@ -141,13 +141,13 @@ const PanelItem = styled.div`
   transition: transform 0.2s;
 
   h2 {
-    color: #6b4423;
+    color: #442727;
     margin-bottom: 0.8rem;
     font-size: 1.4em;
   }
 
   p {
-    color: #666;
+    color: #442727;
     margin: 0;
     font-size: 1em;
     text-align: center;

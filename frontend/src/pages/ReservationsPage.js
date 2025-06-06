@@ -197,6 +197,7 @@ const ReservationsPage = () => {
         return;
       }
 
+      console.log('Запрос данных о бронированиях...');
       const response = await axios.get('/api/reservations', {
         headers: {
           Authorization: `Bearer ${token}`
@@ -204,7 +205,11 @@ const ReservationsPage = () => {
       });
 
       if (response.data && response.data.reservations) {
-        console.log('Получены данные бронирований:', response.data.reservations);
+        console.log('Данные о бронированиях:', response.data);
+        // Выводим структуру первой книги из первого бронирования для отладки
+        if (response.data.length > 0 && response.data[0].Books?.length > 0) {
+          console.log('Структура книги из бронирования:', response.data[0].Books[0]);
+        }
         const formattedReservations = response.data.reservations.map(reservation => ({
           КодБронирования: reservation.id,
           User: {
@@ -520,9 +525,9 @@ const ReservationsPage = () => {
                   {reservation.Books?.map(book => book.Название).join(', ') || 'Нет книг'}
                 </td>
                 <td>
-                  {reservation.ReservationItems?.map(item => 
-                    item.Book?.BookAuthors?.map(author => `${author.Authors?.Имя} ${author.Authors?.Фамилия}`).join(', ') || 'Нет автора'
-                  ).join(', ')}
+                  {reservation.Books?.map(book => 
+                    book.Автор || 'Нет автора'
+                  ).join('; ') || 'Нет автора'}
                 </td>
                 <td>
                   {formatDate(reservation.ДатаБронирования)}

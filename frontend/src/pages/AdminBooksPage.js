@@ -98,11 +98,17 @@ const AdminBooksPage = () => {
 
   useEffect(() => {
     const filtered = books.filter(book => {
+      if (!searchTerm.trim()) return true;
+      
       const searchLower = searchTerm.toLowerCase();
       return (
-        (book.Название || '').toLowerCase().includes(searchLower) ||
-        (book.Описание || '').toLowerCase().includes(searchLower) ||
-        (book.ISBN || '').toLowerCase().includes(searchLower)
+        (book.title || '').toLowerCase().includes(searchLower) ||
+        (book.author || '').toLowerCase().includes(searchLower) ||
+        (book.description || '').toLowerCase().includes(searchLower) ||
+        (book.year ? book.year.toString().includes(searchLower) : false) ||
+        (book.isbn || '').toLowerCase().includes(searchLower) ||
+        (book.categoryName || '').toLowerCase().includes(searchLower) ||
+        (book.status || '').toLowerCase().includes(searchLower)
       );
     });
     setFilteredBooks(filtered);
@@ -206,11 +212,34 @@ const AdminBooksPage = () => {
     }
   };
 
-  const sortedBooks = Array.isArray(filteredBooks) ? filteredBooks.sort((a, b) => {
+  // Map sort field names to match the actual book object properties
+  const getSortField = (book, field) => {
+    const fieldMap = {
+      'title': 'title',
+      'author': 'author',
+      'description': 'description',
+      'year': 'year',
+      'isbn': 'isbn',
+      'categoryName': 'categoryName',
+      'status': 'status'
+    };
+    
+    const actualField = fieldMap[field] || field;
+    return book[actualField] || '';
+  };
+
+  const sortedBooks = Array.isArray(filteredBooks) ? [...filteredBooks].sort((a, b) => {
     const direction = sortDirection === 'asc' ? 1 : -1;
-    const fieldA = a[sortField] || '';
-    const fieldB = b[sortField] || '';
-    return fieldA.localeCompare(fieldB) * direction;
+    const fieldA = getSortField(a, sortField);
+    const fieldB = getSortField(b, sortField);
+    
+    // Handle numeric fields
+    if (sortField === 'year' || sortField === 'ГодИздания') {
+      return (parseInt(fieldA) - parseInt(fieldB)) * direction;
+    }
+    
+    // Handle string fields
+    return String(fieldA).localeCompare(String(fieldB)) * direction;
   }) : [];
 
   return (
