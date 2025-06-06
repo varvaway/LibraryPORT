@@ -1,6 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+
+// Проверяем загрузку переменных окружения
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'установлен' : 'не установлен');
 
 // Маршруты
 const authRoutes = require('./routes/auth');

@@ -63,10 +63,12 @@ const ButtonGroup = styled.div`
 
 const AdminBooksPage = () => {
   const [books, setBooks] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const statusOptions = ['Доступна', 'Забронирована'];
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortField, setSortField] = useState('Название');
+  const [sortField, setSortField] = useState('title');
   const [sortDirection, setSortDirection] = useState('asc');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editBook, setEditBook] = useState(null);
@@ -74,26 +76,41 @@ const AdminBooksPage = () => {
   const [bookToDelete, setBookToDelete] = useState(null);
 
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get('/api/books');
-        console.log('Ответ API:', response.data);
-        console.log('Структура API:', typeof response.data, Array.isArray(response.data));
-        const booksData = Array.isArray(response.data) ? response.data : [];
-        console.log('Книги после преобразования:', booksData);
-        console.log('Первая книга:', booksData[0]);
-        console.log('Поля первой книги:', Object.keys(booksData[0]));
+        
+        // Загружаем книги и категории параллельно
+        const [booksResponse, categoriesResponse] = await Promise.all([
+          axios.get('/api/books'),
+          axios.get('/api/categories')
+        ]);
+        
+        const booksData = Array.isArray(booksResponse.data) ? booksResponse.data : [];
+        const categoriesData = Array.isArray(categoriesResponse.data) ? 
+          categoriesResponse.data : [];
+        
+        console.log('Fetched books:', booksData);
+        console.log('Fetched categories:', categoriesData);
+        
         setBooks(booksData);
         setFilteredBooks(booksData);
+        setCategories(categoriesData);
+        
+        // Log categories after state update
+        setTimeout(() => {
+          console.log('Categories in state after update:', categories);
+        }, 0);
+        
       } catch (error) {
-        console.error('Ошибка при загрузке книг:', error);
-        toast.error('Ошибка при загрузке книг');
+        console.error('Ошибка при загрузке данных:', error);
+        toast.error('Ошибка при загрузке данных');
       } finally {
         setIsLoading(false);
       }
     };
-    fetchBooks();
+    
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -130,7 +147,7 @@ const AdminBooksPage = () => {
       Описание: '',
       ГодИздания: '',
       ISBN: '',
-      Статус: 'Доступна',
+      Статус: 'Доступна', // Set default status
       Категория: '',
       Автор: ''
     });
@@ -139,14 +156,14 @@ const AdminBooksPage = () => {
 
   const handleEdit = (book) => {
     const bookData = {
-      КодКниги: book.id,
-      Название: book.title,
-      Описание: book.description,
-      ГодИздания: book.year,
-      ISBN: book.isbn,
-      Статус: book.status || 'Доступна',
-      Автор: book.author || '',
-      Категория: book.categoryId || ''
+      id: book.id,
+      title: book.title || book.Название,
+      author: book.author || book.Автор,
+      year: book.year || book.ГодИздания,
+      isbn: book.isbn || book.ISBN,
+      status: book.status || book.Статус || 'Доступна',
+      categoryId: book.categoryId || book.Категория?.КодКатегории,
+      description: book.description || book.Описание
     };
     setEditBook(bookData);
     setIsEditModalOpen(true);
@@ -171,23 +188,72 @@ const AdminBooksPage = () => {
 
   const handleSave = async (bookData) => {
     try {
-      console.log('Данные для сохранения:', bookData);
-      let response;
-      const bookDataToSend = {
-        Название: bookData.Название || '',
-        Описание: bookData.Описание || '',
-        ГодИздания: bookData.ГодИздания || '',
-        ISBN: bookData.ISBN || '',
-        Статус: bookData.Статус || 'Доступна',
-        Автор: bookData.Автор || '',
-        Категория: bookData.Категория || null,
-        КодКниги: bookData.КодКниги
+      const token = localStorage.getItem('token');
+      const isEdit = !!bookData.КодКниги;
+      const url = isEdit 
+        ? `/api/books/${bookData.КодКниги}`
+        : '/api/books';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      // Prepare data in the format expected by the backend
+      const requestData = {
+        title: bookData.Название,
+        author: bookData.Автор,
+        year: bookData.ГодИздания ? parseInt(bookData.ГодИздания) : null,
+        isbn: bookData.ISBN || null,
+        description: bookData.Описание || '',
+        status: bookData.Статус || 'Доступна',
+        categoryId: bookData.Категория ? parseInt(bookData.Категория) : null,
+        id: bookData.КодКниги // Keep ID for backend reference if it's an edit
       };
 
-      if (bookData.id) {
-        response = await axios.put(`/api/books/${bookData.id}`, bookDataToSend);
+      console.log('Sending data:', requestData);
+
+      const response = await axios({
+        method,
+        url,
+        data: requestData,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const savedBook = response.data;
+      
+      // Обновляем список книг с учетом категории
+      if (isEdit) {
+        setBooks(prevBooks => 
+          prevBooks.map(book => {
+            if (book.id === savedBook.id) {
+              // Обновляем данные книги, включая информацию о категории
+              return {
+                ...savedBook,
+                categoryName: categories.find(cat => cat.КодКатегории === savedBook.categoryId)?.Название || savedBook.categoryName
+              };
+            }
+            return book;
+          })
+        );
+        setFilteredBooks(prev => 
+          prev.map(book => {
+            if (book.id === savedBook.id) {
+              return {
+                ...savedBook,
+                categoryName: categories.find(cat => cat.КодКатегории === savedBook.categoryId)?.Название || savedBook.categoryName
+              };
+            }
+            return book;
+          })
+        );
       } else {
-        response = await axios.post('/api/books', bookDataToSend);
+        // Для новой книги добавляем название категории
+        const newBook = {
+          ...savedBook,
+          categoryName: categories.find(cat => cat.КодКатегории === savedBook.categoryId)?.Название
+        };
+        setBooks(prevBooks => [...prevBooks, newBook]);
+        setFilteredBooks(prev => [...prev, newBook]);
       }
 
       const updatedBook = response.data;
@@ -228,19 +294,55 @@ const AdminBooksPage = () => {
     return book[actualField] || '';
   };
 
-  const sortedBooks = Array.isArray(filteredBooks) ? [...filteredBooks].sort((a, b) => {
-    const direction = sortDirection === 'asc' ? 1 : -1;
-    const fieldA = getSortField(a, sortField);
-    const fieldB = getSortField(b, sortField);
+  // Добавляем название категории к каждой книге и убираем дубликаты
+  const booksWithCategoryNames = React.useMemo(() => {
+    if (!Array.isArray(books)) return [];
     
-    // Handle numeric fields
-    if (sortField === 'year' || sortField === 'ГодИздания') {
-      return (parseInt(fieldA) - parseInt(fieldB)) * direction;
-    }
+    const uniqueBooks = [];
+    const bookIds = new Set();
     
-    // Handle string fields
-    return String(fieldA).localeCompare(String(fieldB)) * direction;
-  }) : [];
+    books.forEach(book => {
+      if (!book || !book.id) return;
+      if (bookIds.has(book.id)) return; // Пропускаем дубликаты
+      
+      bookIds.add(book.id);
+      uniqueBooks.push({
+        ...book,
+        categoryName: categories.find(cat => cat.КодКатегории === book.categoryId)?.Название || book.categoryName
+      });
+    });
+    
+    return uniqueBooks;
+  }, [books, categories]);
+
+  // Сортируем и фильтруем книги
+  const sortedBooks = React.useMemo(() => {
+    if (!Array.isArray(filteredBooks)) return [];
+    
+    const bookIds = new Set();
+    
+    const uniqueBooks = [...filteredBooks]
+      .filter(book => {
+        if (!book || !book.id) return false;
+        if (bookIds.has(book.id)) return false;
+        bookIds.add(book.id);
+        return true;
+      })
+      .map(book => ({
+        ...book,
+        categoryName: categories.find(cat => cat.КодКатегории === book.categoryId)?.Название || book.categoryName
+      }));
+
+    return uniqueBooks.sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      const fieldA = getSortField(a, sortField);
+      const fieldB = getSortField(b, sortField);
+
+      if (fieldA < fieldB) return -1 * direction;
+      if (fieldA > fieldB) return 1 * direction;
+      return 0;
+    });
+  }, [filteredBooks, sortDirection, sortField, categories]);
 
   return (
     <PageContainer>
@@ -282,14 +384,14 @@ const AdminBooksPage = () => {
                     sortDirection === 'asc' ? '↑' : '↓'
                   )}
                 </TableHeader>
-                <TableHeader onClick={() => handleSort('description')}>
-                  Описание
-                  {sortField === 'description' && (
+                <TableHeader onClick={() => handleSort('category')}>
+                  Категория
+                  {sortField === 'category' && (
                     sortDirection === 'asc' ? '↑' : '↓'
                   )}
                 </TableHeader>
                 <TableHeader onClick={() => handleSort('year')}>
-                  Год издания
+                  Год
                   {sortField === 'year' && (
                     sortDirection === 'asc' ? '↑' : '↓'
                   )}
@@ -297,12 +399,6 @@ const AdminBooksPage = () => {
                 <TableHeader onClick={() => handleSort('isbn')}>
                   ISBN
                   {sortField === 'isbn' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
-                </TableHeader>
-                <TableHeader onClick={() => handleSort('categoryName')}>
-                  Категория
-                  {sortField === 'categoryName' && (
                     sortDirection === 'asc' ? '↑' : '↓'
                   )}
                 </TableHeader>
@@ -319,13 +415,22 @@ const AdminBooksPage = () => {
               {Array.isArray(filteredBooks) && filteredBooks.length > 0 ? (
                 filteredBooks.map((book, index) => (
                   <tr key={book.id || `book-${index}`}>
-                    <td>{book.title || 'Нет данных'}</td>
-                    <td>{book.author || 'Нет данных'}</td>
-                    <td>{book.description || 'Нет данных'}</td>
-                    <td>{book.year || 'Нет данных'}</td>
-                    <td>{book.isbn || 'Нет данных'}</td>
-                    <td>{book.categoryName || 'Нет данных'}</td>
-                    <td>{book.status || 'Нет данных'}</td>
+                    <td>{book.title || '—'}</td>
+                    <td>{book.author || '—'}</td>
+                    <td>{book.categoryName || book.category?.Название || '—'}</td>
+                    <td>{book.year || '—'}</td>
+                    <td>{book.isbn || '—'}</td>
+                    <td>
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '12px',
+                        backgroundColor: book.status === 'Доступна' ? '#e8f5e9' : '#fff3e0',
+                        color: book.status === 'Доступна' ? '#2e7d32' : '#e65100',
+                        fontWeight: 500
+                      }}>
+                        {book.status || 'Неизвестно'}
+                      </span>
+                    </td>
                     <td>
                       <ButtonGroup>
                         <Button $primary onClick={() => handleEdit(book)}>
@@ -360,12 +465,19 @@ const AdminBooksPage = () => {
           </div>
         </div>
       )}
-      <EditBookModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        book={editBook}
-        onSave={handleSave}
-      />
+      {isEditModalOpen && (
+        <>
+          {console.log('Rendering EditBookModal with categories:', categories)}
+          <EditBookModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            book={editBook}
+            onSave={handleSave}
+            categories={categories}
+            statusOptions={statusOptions}
+          />
+        </>
+      )}
 
       <ConfirmationModal
         isOpen={deleteModalOpen}
