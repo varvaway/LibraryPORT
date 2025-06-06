@@ -294,7 +294,7 @@ const CatalogPage = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axiosInstance.get('/api/bookings/reader', { headers });
+        const response = await axiosInstance.get('/api/reservations/my', { headers });
         if (response.data.success) {
           // Собираем id всех книг из активных бронирований
           const activeBookIds = response.data.bookings
@@ -482,7 +482,7 @@ const CatalogPage = () => {
     if (user && user.id) {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const bookingsResp = await axiosInstance.get('/api/bookings/reader', { headers });
+      const bookingsResp = await axiosInstance.get('/api/reservations/my', { headers });
       if (bookingsResp.data.success) {
         const activeBookIds = bookingsResp.data.bookings
           .filter(b => b.status === 'Активно')

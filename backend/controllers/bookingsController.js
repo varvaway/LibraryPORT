@@ -14,13 +14,14 @@ exports.getReaderBookings = async (req, res) => {
     const bookings = await Reservation.findAll({
       where: { КодПользователя: userId },
       include: [{
-        model: Book,
-        as: 'Books',
-        through: { attributes: [] },
+        model: ReservationItem,
+        include: [{
+          model: Book,
         include: [{
           model: Author,
           through: { attributes: [] },
           attributes: ['Имя', 'Фамилия']
+          }]
         }]
       }],
       order: [['ДатаБронирования', 'DESC']]
@@ -30,11 +31,11 @@ exports.getReaderBookings = async (req, res) => {
       success: true,
       bookings: bookings.map(booking => ({
         _id: booking.КодБронирования,
-        books: booking.Books.map(book => ({
-          id: book.КодКниги,
-          title: book.Название,
-          author: book.Authors && book.Authors.length > 0 
-            ? `${book.Authors[0].Имя} ${book.Authors[0].Фамилия}`
+        books: booking.ReservationItems.map(item => ({
+          id: item.Book.КодКниги,
+          title: item.Book.Название,
+          author: item.Book.Authors && item.Book.Authors.length > 0 
+            ? `${item.Book.Authors[0].Имя} ${item.Book.Authors[0].Фамилия}`
             : 'Неизвестный автор'
         })),
         date: booking.ДатаБронирования,

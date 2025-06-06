@@ -204,10 +204,23 @@ const ReservationsPage = () => {
       });
 
       if (response.data && response.data.reservations) {
+        console.log('Получены данные бронирований:', response.data.reservations);
         const formattedReservations = response.data.reservations.map(reservation => ({
-          ...reservation,
-          Книги: reservation.Books?.map(book => book.Название) || [],
-          Авторы: reservation.Books?.map(book => book.Автор) || []
+          КодБронирования: reservation.id,
+          User: {
+            КодПользователя: reservation.user?.КодПользователя || reservation.user?.id,
+            Имя: reservation.user?.Имя || reservation.user?.firstName,
+            Фамилия: reservation.user?.Фамилия || reservation.user?.lastName,
+          },
+          Books: reservation.books?.map(book => ({
+             КодКниги: book.КодКниги || book.id,
+             Название: book.Название || book.title,
+             Автор: book.Автор || book.author,
+          })) || [],
+          ДатаБронирования: reservation.dateFrom,
+          ДатаОкончания: reservation.dateTo,
+          Статус: reservation.status,
+          ReservationItems: reservation.ReservationItems
         }));
 
         setReservations(formattedReservations);
@@ -442,6 +455,19 @@ const ReservationsPage = () => {
     }
   });
 
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Некорректная дата';
+      }
+      return format(date, 'dd.MM.yyyy', { locale: ru });
+    } catch (error) {
+      console.error('Ошибка форматирования даты:', error);
+      return 'Некорректная дата';
+    }
+  };
+
   return (
     <Container>
       <Title>Бронирования</Title>
@@ -499,10 +525,10 @@ const ReservationsPage = () => {
                   ).join(', ')}
                 </td>
                 <td>
-                  {format(new Date(reservation.ДатаБронирования), 'dd.MM.yyyy', { locale: ru })}
+                  {formatDate(reservation.ДатаБронирования)}
                 </td>
                 <td>
-                  {format(new Date(reservation.ДатаОкончания), 'dd.MM.yyyy', { locale: ru })}
+                  {formatDate(reservation.ДатаОкончания)}
                 </td>
                 <td>
                   {reservation.Статус}

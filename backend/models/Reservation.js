@@ -1,40 +1,32 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
 
-const Reservation = sequelize.define('Reservation', {
-  КодБронирования: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    allowNull: false,
-    field: 'КодБронирования'
-  },
-  КодПользователя: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'КодПользователя'
-  },
-  ДатаБронирования: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    field: 'ДатаБронирования'
-  },
-  Статус: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    field: 'Статус'
-  },
-  ДатаОкончания: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    field: 'ДатаОкончания'
-  }
-}, {
-  tableName: 'Бронирования',
-  timestamps: false,
-  schema: 'dbo',
-  freezeTableName: true
-});
+module.exports = (sequelize) => {
+  const Reservation = sequelize.define('Reservation', {
+    КодБронирования: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    КодПользователя: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    ДатаБронирования: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    Статус: {
+      type: DataTypes.STRING(50),
+      allowNull: false
+    },
+    ДатаОкончания: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    }
+  }, {
+    tableName: 'Бронирования',
+    timestamps: false
+  });
 
-// Ассоциация уже определена через sequelize.models
-
-module.exports = Reservation;
+  return Reservation;
+};

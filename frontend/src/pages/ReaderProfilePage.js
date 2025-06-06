@@ -215,7 +215,7 @@ const ReaderProfilePage = () => {
 
   const loadReservations = useCallback(async () => {
     try {
-      const response = await axios.get('/api/bookings/reader');
+      const response = await axios.get('/api/reservations/my');
       if (response.data.success) {
         const now = new Date();
         const current = [];

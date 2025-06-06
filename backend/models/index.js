@@ -2,14 +2,15 @@ const sequelize = require('../config/database');
 const { DataTypes } = require('sequelize');
 
 // Определение моделей
-const User = require('./User');
-const Author = require('./Author');
-const Book = require('./Book');
-const Category = require('./Category');
-const BookAuthor = require('./BookAuthor');
-const BookCategory = require('./BookCategory');
-const Reservation = require('./Reservation');
-const ReservationItem = require('./ReservationItem');
+const User = require('./User')(sequelize);
+const Author = require('./Author')(sequelize);
+const Book = require('./Book')(sequelize);
+const Category = require('./Category')(sequelize);
+const BookAuthor = require('./BookAuthor')(sequelize);
+const BookCategory = require('./BookCategory')(sequelize);
+const Reservation = require('./Reservation')(sequelize);
+const ReservationItem = require('./ReservationItem')(sequelize);
+const MultimediaResource = require('./MultimediaResource')(sequelize);
 
 // Книга <-> Автор
 Book.belongsToMany(Author, { through: BookAuthor, foreignKey: 'КодКниги', otherKey: 'КодАвтора' });
@@ -22,8 +23,7 @@ Category.belongsToMany(Book, { through: BookCategory, foreignKey: 'КодКат�
 // Бронирование <-> Элементы бронирования
 Reservation.hasMany(ReservationItem, {
   foreignKey: 'КодБронирования',
-  sourceKey: 'КодБронирования',
-  as: 'Items'
+  sourceKey: 'КодБронирования'
 });
 ReservationItem.belongsTo(Reservation, {
   foreignKey: 'КодБронирования',
@@ -35,17 +35,19 @@ ReservationItem.belongsTo(Book, {
   foreignKey: 'КодКниги',
   targetKey: 'КодКниги'
 });
+Book.hasMany(ReservationItem, {
+  foreignKey: 'КодКниги',
+  sourceKey: 'КодКниги'
+});
 
 // Пользователь <-> Бронирование
 User.hasMany(Reservation, {
   foreignKey: 'КодПользователя',
-  sourceKey: 'КодПользователя',
-  as: 'Reservations'
+  sourceKey: 'КодПользователя'
 });
 Reservation.belongsTo(User, {
   foreignKey: 'КодПользователя',
-  targetKey: 'КодПользователя',
-  as: 'User'
+  targetKey: 'КодПользователя'
 });
 
 module.exports = {
@@ -58,4 +60,5 @@ module.exports = {
   BookCategory,
   Reservation,
   ReservationItem,
+  MultimediaResource
 };

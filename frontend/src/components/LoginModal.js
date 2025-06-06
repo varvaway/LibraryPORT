@@ -120,15 +120,15 @@ const LoginModal = ({ isOpen, onClose, theme }) => {
       
       console.log('Сохраняемая роль:', normalizedUser.role);
       localStorage.setItem('user', JSON.stringify(normalizedUser));
-      
-      // Отправляем событие об обновлении пользователя
-      window.dispatchEvent(new Event('userUpdated'));
-      
+
+      // Закрываем модальное окно ПЕРЕД навигацией
+      onClose();
+
       // Перенаправляем пользователя в зависимости от роли
       console.log('Попытка перенаправления:', normalizedUser.role);
-      
-      // Добавляем небольшую задержку для гарантии сохранения данных
-      setTimeout(() => {
+
+      // Добавляем небольшую задержку для гарантии сохранения данных - УДАЛЕНО
+      // setTimeout(() => {
         if (normalizedUser.role === 'Администратор') {
           console.log('Перенаправление на /admin');
           navigate('/admin');
@@ -139,11 +139,13 @@ const LoginModal = ({ isOpen, onClose, theme }) => {
           console.log('Неизвестная роль, перенаправление на /');
           navigate('/');
         }
-        // Закрываем модальное окно после навигации
-        onClose();
-      }, 100);
+        // Закрываем модальное окно после навигации - УДАЛЕНО
+        // onClose();
+      // }, 100);
 
-      // Закрываем модальное окно будет выполнено в предыдущем setTimeout
+      // Закрываем модальное окно будет выполнено в предыдущем setTimeout - УДАЛЕНО
+      //
+
     } catch (error) {
       console.error('Ошибка при входе:', error);
       const errorMessage = error.response?.data?.message || 'Ошибка входа. Проверьте введенные данные.';

@@ -19,9 +19,11 @@ const Title = styled.h2`
 
 export default function MapPlaceholder() {
   useEffect(() => {
+    let mapInstance = null; // Объявляем переменную для экземпляра карты
+
     if (window.ymaps) {
       window.ymaps.ready(() => {
-        const map = new window.ymaps.Map('map', {
+        mapInstance = new window.ymaps.Map('map', {
           center: [59.954912, 30.294030],
           zoom: 17,
           controls: ['zoomControl']
@@ -33,10 +35,18 @@ export default function MapPlaceholder() {
           preset: 'islands#redBookIcon'
         });
 
-        map.geoObjects.add(placemark);
-        map.behaviors.disable('scrollZoom');
+        mapInstance.geoObjects.add(placemark);
+        mapInstance.behaviors.disable('scrollZoom');
       });
     }
+
+    // Функция очистки
+    return () => {
+      if (mapInstance) {
+        mapInstance.destroy(); // Уничтожаем экземпляр карты при демонтировании
+      }
+    };
+
   }, []);
 
   return (

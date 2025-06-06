@@ -11,7 +11,6 @@ const readerRequestRoutes = require('./routes/readerRequest');
 const reservationsRoutes = require('./routes/reservations');
 const multimediaRoutes = require('./routes/multimedia');
 const readersRoutes = require('./routes/readers');
-const bookingsRoutes = require('./routes/bookings');
 const usersRoutes = require('./routes/users');
 
 // Создаем приложение
@@ -44,7 +43,6 @@ app.use('/api/reader-requests', readerRequestRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/multimedia', multimediaRoutes);
 app.use('/api/readers', readersRoutes);
-app.use('/api/bookings', bookingsRoutes);
 app.use('/api/users', usersRoutes);
 
 // Обработка ошибок
