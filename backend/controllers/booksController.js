@@ -23,7 +23,6 @@ const getAllBooks = async (req, res) => {
 
     const formattedBooks = books.map(book => {
       const author = book.Authors && book.Authors[0];
-      const category = book.Categories && book.Categories[0];
       
       // Форматируем год: если год отрицательный, добавляем "до н.э."
       const formatYear = (year) => {
@@ -41,8 +40,10 @@ const getAllBooks = async (req, res) => {
         formattedYear: book.ГодИздания !== null ? formatYear(book.ГодИздания) : null,
         isbn: book.ISBN,
         status: book.Статус,
-        categoryId: category ? category.КодКатегории : null,
-        categoryName: category ? category.Название : null,
+        categories: book.Categories.map(category => ({
+          id: category.КодКатегории,
+          name: category.Название
+        })),
         author: author ? `${author.Имя} ${author.Фамилия}` : 'Неизвестный автор',
         originalYear: book.ГодИздания // Сохраняем исходное значение года для сортировки
       };

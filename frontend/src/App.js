@@ -24,6 +24,7 @@ import BooksPage from './pages/BooksPage';
 import LoginPage from './pages/LoginPage';
 import ReaderProfilePage from './pages/ReaderProfilePage';
 import AdminBooksPage from './pages/AdminBooksPage';
+import AdminCategoriesPage from './pages/AdminCategoriesPage';
 
 function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -100,6 +101,14 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="Администратор">
                     <ReadersPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/categories" 
+                element={
+                  <ProtectedRoute requiredRole="Администратор">
+                    <AdminCategoriesPage />
                   </ProtectedRoute>
                 } 
               />

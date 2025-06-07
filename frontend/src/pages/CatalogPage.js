@@ -314,7 +314,7 @@ const CatalogPage = () => {
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       book.author.toLowerCase().includes(searchQuery.toLowerCase())
     ) &&
-    (!selectedCategory || book.categoryId === selectedCategory)
+    (!selectedCategory || book.categories?.some(cat => cat.id === selectedCategory))
   );
 
   useEffect(() => {

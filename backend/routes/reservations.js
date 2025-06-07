@@ -28,10 +28,10 @@ router.get('/', auth.adminAuth, async (req, res) => {
         {
           model: ReservationItem,
           include: [{
-            model: Book,
+              model: Book,
             attributes: ['КодКниги', 'Название', 'ГодИздания', 'Статус'],
             include: [{
-              model: Author,
+                  model: Author,
               attributes: ['КодАвтора', 'Имя', 'Фамилия']
             }]
           }]
@@ -39,7 +39,7 @@ router.get('/', auth.adminAuth, async (req, res) => {
       ],
       order: [['ДатаБронирования', 'DESC']]
     });
-
+    
     res.json({ 
       success: true, 
       reservations: reservations.map(reservation => ({
@@ -79,15 +79,15 @@ router.get('/my', auth.userAuth, async (req, res) => {
     const reservations = await Reservation.findAll({
       where: { КодПользователя: userId },
       include: [{
-        model: ReservationItem,
-        include: [{
-          model: Book,
-          attributes: ['КодКниги', 'Название', 'Статус'],
+          model: ReservationItem,
           include: [{
-            model: Author,
+            model: Book,
+          attributes: ['КодКниги', 'Название', 'Статус'],
+            include: [{
+              model: Author,
             attributes: ['Имя', 'Фамилия']
+            }]
           }]
-        }]
       }],
       order: [['ДатаБронирования', 'DESC']]
     });

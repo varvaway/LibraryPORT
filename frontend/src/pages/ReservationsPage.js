@@ -217,11 +217,15 @@ const ReservationsPage = () => {
             Имя: reservation.user?.Имя || reservation.user?.firstName,
             Фамилия: reservation.user?.Фамилия || reservation.user?.lastName,
           },
-          Books: reservation.books?.map(book => ({
+          Books: reservation.books?.map(book => {
+            const authorFullName = book.authors?.map(a => `${a.firstName || ''} ${a.lastName || ''}`).join(', ') || 'Нет автора';
+            console.log('Book author full name:', authorFullName, 'for book:', book.title);
+            return {
              КодКниги: book.КодКниги || book.id,
              Название: book.Название || book.title,
-             Автор: book.Автор || book.author,
-          })) || [],
+             Автор: authorFullName,
+            };
+          }) || [],
           ДатаБронирования: reservation.dateFrom,
           ДатаОкончания: reservation.dateTo,
           Статус: reservation.status,

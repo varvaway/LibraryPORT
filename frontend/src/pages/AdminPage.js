@@ -256,7 +256,6 @@ const AdminPage = () => {
         <ProfileInfo>
           {!isEditing ? (
             <>
-
               <p>{user.firstName} {user.lastName}</p>
               <p>{user.email}</p>
               <Button $primary onClick={handleEditClick}>Редактировать профиль</Button>
@@ -314,6 +313,10 @@ const AdminPage = () => {
           <PanelItem onClick={() => navigate('/admin/multimedia')}>
             <h2>Мультимедиа</h2>
             <p>Управление мультимедийными ресурсами</p>
+          </PanelItem>
+          <PanelItem onClick={() => navigate('/admin/categories')}>
+            <h2>Категории</h2>
+            <p>Управление категориями для книг</p>
           </PanelItem>
         </AdminPanelGrid>
       </Container>
