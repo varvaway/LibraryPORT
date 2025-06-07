@@ -230,7 +230,7 @@ const BooksPage = () => {
             <tr key={book.КодКниги}>
               <td>{book.Название}</td>
               <td>{book.Описание}</td>
-              <td>{book.ГодИздания}</td>
+              <td>{book.formattedYear || book.ГодИздания}</td>
               <td>{book.ISBN}</td>
               <td>{book.Статус}</td>
               {isAdmin && (

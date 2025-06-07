@@ -25,16 +25,26 @@ const getAllBooks = async (req, res) => {
       const author = book.Authors && book.Authors[0];
       const category = book.Categories && book.Categories[0];
       
+      // Форматируем год: если год отрицательный, добавляем "до н.э."
+      const formatYear = (year) => {
+        if (year < 0) {
+          return `${Math.abs(year)} до н.э.`;
+        }
+        return year.toString();
+      };
+
       return {
         id: book.КодКниги,
         title: book.Название,
         description: book.Описание,
         year: book.ГодИздания,
+        formattedYear: book.ГодИздания !== null ? formatYear(book.ГодИздания) : null,
         isbn: book.ISBN,
         status: book.Статус,
         categoryId: category ? category.КодКатегории : null,
         categoryName: category ? category.Название : null,
-        author: author ? `${author.Имя} ${author.Фамилия}` : 'Неизвестный автор'
+        author: author ? `${author.Имя} ${author.Фамилия}` : 'Неизвестный автор',
+        originalYear: book.ГодИздания // Сохраняем исходное значение года для сортировки
       };
     });
 

@@ -64,33 +64,110 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 
 // Создаем конфигурацию для отправки почты через Яндекс
 let transporter = {
-  sendMail: async () => {
+  sendMail: async (mailOptions) => {
     console.warn('Email sending is disabled (no SMTP config)');
-    return { messageId: 'test-message-id' };
+    console.log('Mock email would be sent with options:', mailOptions);
+    return { messageId: 'test-message-id-' + Date.now() };
   }
 };
 
 // Инициализируем SMTP
 const initSmtp = async () => {
+  console.log('Начало инициализации SMTP...');
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.warn('EMAIL_USER or EMAIL_PASS not set. Using mock email sender.');
     return;
   }
 
+  if (!process.env.EMAIL_USER) {
+    console.warn('EMAIL_USER не установлен. Письма отправляться не будут.');
+    return;
+  }
+  
+  if (!process.env.EMAIL_PASS) {
+    console.warn('EMAIL_PASS не установлен. Письма отправляться не будут.');
+    return;
+  }
+
   try {
-    const smtpConfig = {
-      host: 'smtp.yandex.ru',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+    // Пробуем несколько вариантов подключения
+    const smtpOptions = [
+      // Вариант 1: SSL на порту 465
+      {
+        host: 'smtp.yandex.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        },
+        tls: {
+          rejectUnauthorized: false, // Пробуем отключить проверку сертификата
+          minVersion: 'TLSv1.2'
+        },
+        debug: true,
+        logger: true
       },
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: 'TLSv1.2'
+      // Вариант 2: STARTTLS на порту 587
+      {
+        host: 'smtp.yandex.com',
+        port: 587,
+        secure: false, // false для порта 587
+        requireTLS: true,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        },
+        tls: {
+          rejectUnauthorized: false
+        },
+        debug: true,
+        logger: true
+      },
+      // Вариант 3: Без шифрования (только для тестирования)
+      {
+        host: 'smtp.yandex.com',
+        port: 25,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        },
+        tls: {
+          rejectUnauthorized: false
+        },
+        ignoreTLS: true,
+        debug: true,
+        logger: true
       }
-    };
+    ];
+
+    let lastError = null;
+    
+    // Пробуем подключиться по очереди каждым из вариантов
+    for (const smtpConfig of smtpOptions) {
+      try {
+        console.log('Пробуем подключиться с настройками:', {
+          host: smtpConfig.host,
+          port: smtpConfig.port,
+          secure: smtpConfig.secure,
+          user: smtpConfig.auth.user
+        });
+        
+        const testTransporter = nodemailer.createTransport(smtpConfig);
+        await testTransporter.verify();
+        
+        console.log(`✅ Успешное подключение к ${smtpConfig.host}:${smtpConfig.port}`);
+        return testTransporter;
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Ошибка подключения к ${smtpConfig.host}:${smtpConfig.port}:`, error.message);
+        // Продолжаем пробовать следующие настройки
+      }
+    }
+    
+    // Если ни один вариант не сработал, бросаем последнюю ошибку
+    throw lastError;
 
     console.log('Попытка подключения к SMTP с настройками:', {
       host: smtpConfig.host,
@@ -115,8 +192,20 @@ const initSmtp = async () => {
   }
 };
 
+// Глобальная переменная для транспорта
+let smtpTransport = null;
+
 // Инициализируем SMTP при старте
-initSmtp();
+initSmtp().then(transport => {
+  if (transport) {
+    smtpTransport = transport;
+    console.log('SMTP транспорт успешно инициализирован');
+  } else {
+    console.warn('SMTP транспорт не был инициализирован, используется моковый отправитель');
+  }
+}).catch(error => {
+  console.error('Ошибка при инициализации SMTP транспорта:', error);
+});
 
 // Настройки для отправителя
 const senderName = 'Юношеская библиотека им. А.П. Гайдара';
@@ -204,18 +293,10 @@ exports.sendReaderRequest = async (req, res) => {
     `Пожалуйста, свяжитесь с читателем до ${responseTimeStr} (${dayName}).`;
 
   try {
-    // Логируем данные для отладки
-    console.log('Sending email with data:', {
+    // Формируем данные письма
+    const mailOptions = {
       from: `"${senderName}" <${process.env.EMAIL_USER || 'noreply@example.com'}>`,
-      to: process.env.EMAIL_TO || 'your-email@yandex.ru',
-      subject: `Новая заявка на регистрацию читателя от ${name}`,
-      text: notificationText
-    });
-
-    // Отправляем email
-    const mailResult = await transporter.sendMail({
-      from: `"${senderName}" <${process.env.EMAIL_USER || 'noreply@example.com'}>`,
-      to: process.env.EMAIL_TO || 'your-email@yandex.ru',
+      to: process.env.EMAIL_TO || process.env.EMAIL_USER,
       subject: `Новая заявка на регистрацию читателя от ${name}`,
       text: notificationText,
       html: `
@@ -226,7 +307,22 @@ exports.sendReaderRequest = async (req, res) => {
         <p><strong>Статус:</strong> ${isWorkingTime ? 'В рабочее время' : 'В нерабочее время'}</p>
         <p style="color: red;"><strong>Пожалуйста, свяжитесь с читателем до ${responseTimeStr} (${dayName})</strong></p>
       `
+    };
+
+    // Логируем данные для отладки
+    console.log('Sending email with data:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      text: mailOptions.text
     });
+
+    // Используем инициализированный транспорт или моковый отправитель
+    const mailTransporter = smtpTransport || transporter;
+    console.log('Используемый транспорт:', mailTransporter === smtpTransport ? 'SMTP' : 'моковый');
+
+    // Отправляем email
+    const mailResult = await mailTransporter.sendMail(mailOptions);
 
     console.log('Email sent successfully:', mailResult.messageId);
 
