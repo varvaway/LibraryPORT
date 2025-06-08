@@ -417,7 +417,9 @@ const AdminBooksPage = () => {
                   <tr key={book.id || `book-${index}`}>
                     <td>{book.title || '—'}</td>
                     <td>{book.author || '—'}</td>
-                    <td>{book.categoryName || book.category?.Название || '—'}</td>
+                    <td>{book.categories && book.categories.length > 0 
+                      ? book.categories.map(cat => cat.name).join(', ') 
+                      : '—'}</td>
                     <td>{book.year || '—'}</td>
                     <td>{book.isbn || '—'}</td>
                     <td>

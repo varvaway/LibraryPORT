@@ -1,4 +1,4 @@
-const { Book, Author, Category, BookAuthor, BookCategory } = require('../models');
+const { Book, Author, Category, BookAuthor, BookCategory, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 // Контроллер для работы с книгами
@@ -44,6 +44,7 @@ const getAllBooks = async (req, res) => {
           id: category.КодКатегории,
           name: category.Название
         })),
+        categoryName: book.Categories && book.Categories.length > 0 ? book.Categories[0].Название : '—',
         author: author ? `${author.Имя} ${author.Фамилия}` : 'Неизвестный автор',
         originalYear: book.ГодИздания // Сохраняем исходное значение года для сортировки
       };
@@ -83,31 +84,87 @@ const getBookById = async (req, res) => {
 
 // Создать новую книгу
 const createBook = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
-    const { title, author, year, genre, description } = req.body;
-    const book = await Book.create({
+    const { title, author, year, isbn, description, status, categoryId } = req.body;
+
+    let authorId = null;
+    if (author) {
+      const authorParts = author.split(' ');
+      const firstName = authorParts[0];
+      const lastName = authorParts.slice(1).join(' ');
+
+      const [authorInstance] = await Author.findOrCreate({
+        where: { Имя: firstName, Фамилия: lastName },
+        defaults: { Имя: firstName, Фамилия: lastName },
+        transaction,
+      });
+      authorId = authorInstance.КодАвтора;
+    }
+
+    const newBook = await Book.create({
       Название: title,
-      Автор: author,
-      Год: year,
-      Жанр: genre,
       Описание: description,
-      Доступна: true
+      ГодИздания: year || null,
+      ISBN: isbn || null,
+      Статус: status || 'Доступна',
+    }, { transaction });
+
+    if (authorId) {
+      await BookAuthor.create({
+        КодКниги: newBook.КодКниги,
+        КодАвтора: authorId,
+      }, { transaction });
+    }
+
+    if (categoryId) {
+      await BookCategory.create({
+        КодКниги: newBook.КодКниги,
+        КодКатегории: categoryId,
+      }, { transaction });
+    }
+
+    // Загружаем только что созданную книгу с авторами и категориями для ответа
+    const createdBook = await Book.findByPk(newBook.КодКниги, {
+      include: [
+        {
+          model: Author,
+          through: BookAuthor,
+          attributes: ['Имя', 'Фамилия']
+        },
+        {
+          model: Category,
+          through: BookCategory,
+          attributes: ['КодКатегории', 'Название']
+        }
+      ],
+      transaction,
     });
-    
+
+    await transaction.commit();
+
     const formattedBook = {
-      id: book.КодКниги,
-      title: book.Название,
-      author: book.Автор,
-      year: book.Год,
-      genre: book.Жанр,
-      description: book.Описание,
-      available: book.Доступна
+      id: createdBook.КодКниги,
+      title: createdBook.Название,
+      description: createdBook.Описание,
+      year: createdBook.ГодИздания,
+      formattedYear: createdBook.ГодИздания !== null ? createdBook.ГодИздания < 0 ? `${Math.abs(createdBook.ГодИздания)} до н.э.` : createdBook.ГодИздания.toString() : null,
+      isbn: createdBook.ISBN,
+      status: createdBook.Статус,
+      categories: createdBook.Categories.map(category => ({
+        id: category.КодКатегории,
+        name: category.Название
+      })),
+      categoryName: createdBook.Categories && createdBook.Categories.length > 0 ? createdBook.Categories[0].Название : '—',
+      author: createdBook.Authors && createdBook.Authors.length > 0 ? `${createdBook.Authors[0].Имя} ${createdBook.Authors[0].Фамилия}` : 'Неизвестный автор',
+      originalYear: createdBook.ГодИздания
     };
-    
+
     res.status(201).json(formattedBook);
   } catch (error) {
+    await transaction.rollback();
     console.error('Ошибка при создании книги:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ message: error.message });
   }
 };
 
