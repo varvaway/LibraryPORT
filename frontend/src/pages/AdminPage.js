@@ -318,6 +318,10 @@ const AdminPage = () => {
             <h2>Категории</h2>
             <p>Управление категориями для книг</p>
           </PanelItem>
+          <PanelItem onClick={() => navigate('/admin/authors')}>
+            <h2>Авторы</h2>
+            <p>Управление авторами</p>
+          </PanelItem>
         </AdminPanelGrid>
       </Container>
 

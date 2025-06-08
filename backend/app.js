@@ -18,6 +18,7 @@ const multimediaRoutes = require('./routes/multimedia');
 const readersRoutes = require('./routes/readers');
 const usersRoutes = require('./routes/users');
 const adminCategoriesRoutes = require('./routes/adminCategories');
+const authorsRoutes = require('./routes/authors');
 
 // Создаем приложение
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/multimedia', multimediaRoutes);
 app.use('/api/readers', readersRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/admin-categories', adminCategoriesRoutes);
+app.use('/api/authors', authorsRoutes);
 
 // Обработка ошибок
 app.use((err, req, res, next) => {
