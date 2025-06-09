@@ -86,42 +86,31 @@ const getBookById = async (req, res) => {
 const createBook = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { title, author, year, isbn, description, status, categoryId } = req.body;
+    console.log('Received create book request:', req.body);
+    const { title, description, year, isbn, status, authors, categories } = req.body;
 
-    let authorId = null;
-    if (author) {
-      const authorParts = author.split(' ');
-      const firstName = authorParts[0];
-      const lastName = authorParts.slice(1).join(' ');
-
-      const [authorInstance] = await Author.findOrCreate({
-        where: { Имя: firstName, Фамилия: lastName },
-        defaults: { Имя: firstName, Фамилия: lastName },
-        transaction,
-      });
-      authorId = authorInstance.КодАвтора;
+    if (!title) {
+      return res.status(400).json({ message: 'Название книги обязательно' });
     }
 
     const newBook = await Book.create({
       Название: title,
-      Описание: description,
+      Описание: description || '',
       ГодИздания: year || null,
-      ISBN: isbn || null,
-      Статус: status || 'Доступна',
+      ISBN: isbn || '',
+      Статус: status || 'Доступна'
     }, { transaction });
 
-    if (authorId) {
-      await BookAuthor.create({
-        КодКниги: newBook.КодКниги,
-        КодАвтора: authorId,
-      }, { transaction });
+    console.log('Created book:', newBook.toJSON());
+
+    if (authors && authors.length > 0) {
+      console.log('Adding authors:', authors);
+      await newBook.setAuthors(authors, { transaction });
     }
 
-    if (categoryId) {
-      await BookCategory.create({
-        КодКниги: newBook.КодКниги,
-        КодКатегории: categoryId,
-      }, { transaction });
+    if (categories && categories.length > 0) {
+      console.log('Adding categories:', categories);
+      await newBook.setCategories(categories, { transaction });
     }
 
     // Загружаем только что созданную книгу с авторами и категориями для ответа
@@ -129,12 +118,12 @@ const createBook = async (req, res) => {
       include: [
         {
           model: Author,
-          through: BookAuthor,
-          attributes: ['Имя', 'Фамилия']
+          through: { attributes: [] },
+          attributes: ['КодАвтора', 'Имя', 'Фамилия']
         },
         {
           model: Category,
-          through: BookCategory,
+          through: { attributes: [] },
           attributes: ['КодКатегории', 'Название']
         }
       ],
@@ -143,23 +132,32 @@ const createBook = async (req, res) => {
 
     await transaction.commit();
 
+    // Форматируем ответ
     const formattedBook = {
       id: createdBook.КодКниги,
       title: createdBook.Название,
       description: createdBook.Описание,
       year: createdBook.ГодИздания,
-      formattedYear: createdBook.ГодИздания !== null ? createdBook.ГодИздания < 0 ? `${Math.abs(createdBook.ГодИздания)} до н.э.` : createdBook.ГодИздания.toString() : null,
       isbn: createdBook.ISBN,
       status: createdBook.Статус,
+      author: createdBook.Authors && createdBook.Authors.length > 0 
+        ? `${createdBook.Authors[0].Имя} ${createdBook.Authors[0].Фамилия}`
+        : null,
+      authors: createdBook.Authors.map(author => ({
+        id: author.КодАвтора,
+        firstName: author.Имя,
+        lastName: author.Фамилия
+      })),
       categories: createdBook.Categories.map(category => ({
         id: category.КодКатегории,
         name: category.Название
       })),
-      categoryName: createdBook.Categories && createdBook.Categories.length > 0 ? createdBook.Categories[0].Название : '—',
-      author: createdBook.Authors && createdBook.Authors.length > 0 ? `${createdBook.Authors[0].Имя} ${createdBook.Authors[0].Фамилия}` : 'Неизвестный автор',
-      originalYear: createdBook.ГодИздания
+      categoryName: createdBook.Categories && createdBook.Categories.length > 0 
+        ? createdBook.Categories[0].Название 
+        : null
     };
 
+    console.log('Sending response:', formattedBook);
     res.status(201).json(formattedBook);
   } catch (error) {
     await transaction.rollback();
@@ -170,35 +168,108 @@ const createBook = async (req, res) => {
 
 // Обновить книгу
 const updateBook = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
+    console.log('Received update request for book:', req.params.id);
+    console.log('Request body:', req.body);
+    
+    const { title, description, year, isbn, status, authors, categories } = req.body;
     const book = await Book.findByPk(req.params.id);
+    
     if (!book) {
+      console.log('Book not found:', req.params.id);
       return res.status(404).json({ message: 'Книга не найдена' });
     }
-    
-    const { title, author, year, genre, description } = req.body;
-    await book.update({
-      Название: title,
-      Автор: author,
-      Год: year,
-      Жанр: genre,
-      Описание: description
-    });
-    
-    const formattedBook = {
-      id: book.КодКниги,
-      title: book.Название,
-      author: book.Автор,
-      year: book.Год,
-      genre: book.Жанр,
-      description: book.Описание,
-      available: book.Доступна
-    };
-    
-    res.json(formattedBook);
+
+    console.log('Found book:', book.toJSON());
+
+    try {
+      await book.update({
+        Название: title,
+        Описание: description || '',
+        ГодИздания: year || null,
+        ISBN: isbn || '',
+        Статус: status || 'Доступна'
+      }, { transaction });
+      console.log('Book updated successfully');
+    } catch (updateError) {
+      console.error('Error updating book:', updateError);
+      throw updateError;
+    }
+
+    try {
+      if (authors && authors.length > 0) {
+        console.log('Updating authors:', authors);
+        await book.setAuthors(authors, { transaction });
+      }
+      if (categories && categories.length > 0) {
+        console.log('Updating categories:', categories);
+        await book.setCategories(categories, { transaction });
+      }
+    } catch (relationError) {
+      console.error('Error updating relations:', relationError);
+      throw relationError;
+    }
+
+    try {
+      const updatedBook = await Book.findByPk(book.КодКниги, {
+        include: [
+          { 
+            model: Author,
+            through: { attributes: [] },
+            attributes: ['КодАвтора', 'Имя', 'Фамилия']
+          },
+          { 
+            model: Category,
+            through: { attributes: [] },
+            attributes: ['КодКатегории', 'Название']
+          }
+        ],
+        transaction
+      });
+      console.log('Retrieved updated book with relations');
+
+      // Форматируем ответ
+      const formattedBook = {
+        id: updatedBook.КодКниги,
+        title: updatedBook.Название,
+        description: updatedBook.Описание,
+        year: updatedBook.ГодИздания,
+        isbn: updatedBook.ISBN,
+        status: updatedBook.Статус,
+        author: updatedBook.Authors && updatedBook.Authors.length > 0 
+          ? `${updatedBook.Authors[0].Имя} ${updatedBook.Authors[0].Фамилия}`
+          : null,
+        authors: updatedBook.Authors.map(author => ({
+          id: author.КодАвтора,
+          firstName: author.Имя,
+          lastName: author.Фамилия
+        })),
+        categories: updatedBook.Categories.map(category => ({
+          id: category.КодКатегории,
+          name: category.Название
+        })),
+        categoryName: updatedBook.Categories && updatedBook.Categories.length > 0 
+          ? updatedBook.Categories[0].Название 
+          : null
+      };
+
+      await transaction.commit();
+      console.log('Sending response:', formattedBook);
+      res.json(formattedBook);
+    } catch (retrieveError) {
+      console.error('Error retrieving updated book:', retrieveError);
+      throw retrieveError;
+    }
   } catch (error) {
-    console.error('Ошибка при обновлении книги:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    await transaction.rollback();
+    console.error('Error in updateBook:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Ошибка сервера',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

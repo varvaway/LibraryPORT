@@ -156,15 +156,16 @@ const AdminBooksPage = () => {
 
   const handleEdit = (book) => {
     const bookData = {
-      id: book.id,
-      title: book.title || book.Название,
-      author: book.author || book.Автор,
-      year: book.year || book.ГодИздания,
-      isbn: book.isbn || book.ISBN,
-      status: book.status || book.Статус || 'Доступна',
-      categoryId: book.categoryId || book.Категория?.КодКатегории,
-      description: book.description || book.Описание
+      КодКниги: book.id,
+      Название: book.title,
+      Описание: book.description || '',
+      ГодИздания: book.year || '',
+      ISBN: book.isbn || '',
+      Статус: book.status || 'Доступна',
+      Категория: book.categories && book.categories.length > 0 ? book.categories[0].id : '',
+      Автор: book.author || ''
     };
+    console.log('Editing book data:', bookData);
     setEditBook(bookData);
     setIsEditModalOpen(true);
   };
@@ -195,19 +196,56 @@ const AdminBooksPage = () => {
         : '/api/books';
       const method = isEdit ? 'PUT' : 'POST';
 
+      // Разбиваем имя автора на части
+      let authorId = null;
+      if (bookData.Автор) {
+        const authorParts = bookData.Автор.split(' ');
+        const firstName = authorParts[0];
+        const lastName = authorParts.slice(1).join(' ');
+
+        // Ищем или создаем автора
+        try {
+          const authorResponse = await axios.get('/api/authors');
+          const existingAuthor = authorResponse.data.find(
+            a => a.firstName === firstName && a.lastName === lastName
+          );
+
+          if (existingAuthor) {
+            authorId = existingAuthor.id;
+          } else {
+            // Создаем нового автора
+            const newAuthorResponse = await axios.post('/api/authors', {
+              firstName,
+              lastName
+            }, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            authorId = newAuthorResponse.data.id;
+          }
+        } catch (error) {
+          console.error('Ошибка при работе с автором:', error);
+          throw error;
+        }
+      }
+
       // Prepare data in the format expected by the backend
       const requestData = {
         title: bookData.Название,
-        author: bookData.Автор,
-        year: bookData.ГодИздания ? parseInt(bookData.ГодИздания) : null,
-        isbn: bookData.ISBN || null,
         description: bookData.Описание || '',
+        year: bookData.ГодИздания ? parseInt(bookData.ГодИздания) : null,
+        isbn: bookData.ISBN || '',
         status: bookData.Статус || 'Доступна',
-        categoryId: bookData.Категория ? parseInt(bookData.Категория) : null,
-        id: bookData.КодКниги // Keep ID for backend reference if it's an edit
+        authors: authorId ? [authorId] : [],
+        categories: bookData.Категория ? [parseInt(bookData.Категория)] : []
       };
 
-      console.log('Sending data:', requestData);
+      console.log('Sending request to:', url);
+      console.log('Request method:', method);
+      console.log('Request data:', requestData);
+      console.log('Book data from form:', bookData);
 
       const response = await axios({
         method,
@@ -220,16 +258,16 @@ const AdminBooksPage = () => {
       });
 
       const savedBook = response.data;
+      console.log('Received saved book:', savedBook);
       
-      // Обновляем список книг с учетом категории
+      // Обновляем список книг
       if (isEdit) {
         setBooks(prevBooks => 
           prevBooks.map(book => {
             if (book.id === savedBook.id) {
-              // Обновляем данные книги, включая информацию о категории
               return {
                 ...savedBook,
-                categoryName: categories.find(cat => cat.КодКатегории === savedBook.categoryId)?.Название || savedBook.categoryName
+                categoryName: savedBook.categoryName || categories.find(cat => cat.КодКатегории === savedBook.categories?.[0]?.id)?.Название
               };
             }
             return book;
@@ -240,7 +278,7 @@ const AdminBooksPage = () => {
             if (book.id === savedBook.id) {
               return {
                 ...savedBook,
-                categoryName: categories.find(cat => cat.КодКатегории === savedBook.categoryId)?.Название || savedBook.categoryName
+                categoryName: savedBook.categoryName || categories.find(cat => cat.КодКатегории === savedBook.categories?.[0]?.id)?.Название
               };
             }
             return book;
@@ -250,30 +288,17 @@ const AdminBooksPage = () => {
         // Для новой книги добавляем название категории
         const newBook = {
           ...savedBook,
-          categoryName: categories.find(cat => cat.КодКатегории === savedBook.categoryId)?.Название
+          categoryName: savedBook.categoryName || categories.find(cat => cat.КодКатегории === savedBook.categories?.[0]?.id)?.Название
         };
-        setBooks(prevBooks => [...prevBooks, newBook]);
+        setBooks(prev => [...prev, newBook]);
         setFilteredBooks(prev => [...prev, newBook]);
       }
 
-      const updatedBook = response.data;
-      
-      if (bookData.id) {
-        setBooks(books.map(book => 
-          book.id === bookData.id ? updatedBook : book
-        ));
-        setFilteredBooks(filteredBooks.map(book => 
-          book.id === bookData.id ? updatedBook : book
-        ));
-      } else {
-        setBooks([...books, updatedBook]);
-        setFilteredBooks([...filteredBooks, updatedBook]);
-      }
-
       setIsEditModalOpen(false);
-      toast.success('Книга успешно сохранена');
+      toast.success(isEdit ? 'Книга успешно обновлена' : 'Книга успешно добавлена');
     } catch (error) {
       console.error('Ошибка при сохранении книги:', error);
+      console.error('Error details:', error.response?.data);
       toast.error('Ошибка при сохранении книги');
     }
   };

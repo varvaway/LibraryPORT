@@ -128,13 +128,47 @@ exports.updateBook = async (req, res) => {
 
     const updatedBook = await Book.findByPk(book.КодКниги, {
       include: [
-        { model: Author, through: { attributes: [] } },
-        { model: Category, through: { attributes: [] } }
+        { 
+          model: Author,
+          through: { attributes: [] },
+          attributes: ['КодАвтора', 'Имя', 'Фамилия']
+        },
+        { 
+          model: Category,
+          through: { attributes: [] },
+          attributes: ['КодКатегории', 'Название']
+        }
       ]
     });
 
-    res.json(updatedBook);
+    // Форматируем ответ
+    const formattedBook = {
+      id: updatedBook.КодКниги,
+      title: updatedBook.Название,
+      description: updatedBook.Описание,
+      year: updatedBook.ГодИздания,
+      isbn: updatedBook.ISBN,
+      status: updatedBook.Статус,
+      author: updatedBook.Authors && updatedBook.Authors.length > 0 
+        ? `${updatedBook.Authors[0].Имя} ${updatedBook.Authors[0].Фамилия}`
+        : null,
+      authors: updatedBook.Authors.map(author => ({
+        id: author.КодАвтора,
+        firstName: author.Имя,
+        lastName: author.Фамилия
+      })),
+      categories: updatedBook.Categories.map(category => ({
+        id: category.КодКатегории,
+        name: category.Название
+      })),
+      categoryName: updatedBook.Categories && updatedBook.Categories.length > 0 
+        ? updatedBook.Categories[0].Название 
+        : null
+    };
+
+    res.json(formattedBook);
   } catch (e) {
+    console.error('Ошибка при обновлении книги:', e);
     res.status(500).json({ message: 'Ошибка при обновлении книги' });
   }
 };
