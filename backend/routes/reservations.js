@@ -213,20 +213,39 @@ router.delete('/:id', auth.userAuth, async (req, res) => {
   try {
     const reservationId = req.params.id;
     const userId = req.user.КодПользователя;
+    const isAdmin = req.user.role === 'Администратор';
+
+    console.log('Delete reservation request:', {
+      reservationId,
+      userId,
+      isAdmin,
+      user: req.user
+    });
+
+    const whereClause = {
+      КодБронирования: reservationId,
+      Статус: RESERVATION_STATUS.ACTIVE
+    };
+
+    // Если пользователь не администратор, добавляем проверку на владельца
+    if (!isAdmin) {
+      whereClause.КодПользователя = userId;
+    }
+
+    console.log('Searching reservation with whereClause:', whereClause);
 
     const reservation = await Reservation.findOne({
-      where: {
-        КодБронирования: reservationId,
-        КодПользователя: userId,
-        Статус: RESERVATION_STATUS.ACTIVE
-      },
+      where: whereClause,
       include: [{
         model: ReservationItem,
         include: [{ model: Book }]
       }]
     });
 
+    console.log('Found reservation:', reservation ? 'Yes' : 'No');
+
     if (!reservation) {
+      console.log('Reservation not found');
       return res.status(404).json({ message: 'Бронирование не найдено' });
     }
 
@@ -239,6 +258,8 @@ router.delete('/:id', auth.userAuth, async (req, res) => {
       item.Book.Статус = BOOK_STATUS.AVAILABLE;
       await item.Book.save();
     }
+
+    console.log('Reservation cancelled successfully');
 
     res.json({ 
       success: true,
