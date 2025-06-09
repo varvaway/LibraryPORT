@@ -123,13 +123,21 @@ const Dialog = styled.div`
 
 const AdminPanelGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   padding: 1rem;
   position: relative;
   z-index: 1;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 30px auto;
+  
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const PanelItem = styled.div`
