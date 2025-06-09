@@ -211,6 +211,7 @@ const ReservationsPage = () => {
           console.log('Структура книги из бронирования:', response.data[0].Books[0]);
         }
         const formattedReservations = response.data.reservations.map(reservation => ({
+          id: reservation.id,
           КодБронирования: reservation.id,
           User: {
             КодПользователя: reservation.user?.КодПользователя || reservation.user?.id,
@@ -340,7 +341,7 @@ const ReservationsPage = () => {
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/reservations/${reservationToDelete.КодБронирования}`, {
+      await axios.delete(`/api/reservations/${reservationToDelete.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -349,7 +350,7 @@ const ReservationsPage = () => {
       fetchReservations();
     } catch (error) {
       console.error('Ошибка при удалении бронирования:', error);
-      toast.error('Ошибка при удалении бронирования');
+      toast.error('Ошибка при удалением бронирования');
     } finally {
       setDeleteModalOpen(false);
       setReservationToDelete(null);
