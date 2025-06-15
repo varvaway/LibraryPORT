@@ -275,16 +275,60 @@ const updateBook = async (req, res) => {
 
 // Удалить книгу
 const deleteBook = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
   try {
-    const book = await Book.findByPk(req.params.id);
+    const book = await Book.findByPk(req.params.id, { 
+      include: [
+        { model: Author, through: BookAuthor },
+        { model: Category, through: BookCategory }
+      ],
+      transaction 
+    });
+    
     if (!book) {
+      await transaction.rollback();
       return res.status(404).json({ message: 'Книга не найдена' });
     }
-    await book.destroy();
+    
+    // 1. Удаляем связи с авторами
+    if (book.Authors && book.Authors.length > 0) {
+      await book.removeAuthors(book.Authors, { transaction });
+    }
+    
+    // 2. Удаляем связи с категориями
+    if (book.Categories && book.Categories.length > 0) {
+      await book.removeCategories(book.Categories, { transaction });
+    }
+    
+    // 3. Удаляем связи из таблицы КнигиАвторы
+    await BookAuthor.destroy({
+      where: { КодКниги: req.params.id },
+      transaction
+    });
+    
+    // 4. Удаляем связи из таблицы КнигиКатегории
+    await BookCategory.destroy({
+      where: { КодКниги: req.params.id },
+      transaction
+    });
+    
+    // 5. Удаляем саму книгу
+    await book.destroy({ transaction });
+    
+    // Если всё успешно, фиксируем транзакцию
+    await transaction.commit();
+    
     res.json({ message: 'Книга успешно удалена' });
   } catch (error) {
+    // В случае ошибки откатываем транзакцию
+    await transaction.rollback();
     console.error('Ошибка при удалении книги:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ 
+      message: 'Ошибка при удалении книги',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

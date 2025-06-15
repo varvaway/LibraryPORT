@@ -132,55 +132,75 @@ const AdminBooksPage = () => {
   }, [books, searchTerm]);
 
   const handleSort = (field) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    // If clicking the same field, toggle direction
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
+      // If clicking a new field, set it and default to ascending
       setSortField(field);
       setSortDirection('asc');
     }
   };
 
   const handleAdd = () => {
-    setEditBook({
-      КодКниги: '',
-      Название: '',
-      Описание: '',
-      ГодИздания: '',
-      ISBN: '',
-      Статус: 'Доступна', // Set default status
-      Категория: '',
-      Автор: ''
-    });
+    setEditBook(null);
     setIsEditModalOpen(true);
   };
 
   const handleEdit = (book) => {
     const bookData = {
-      КодКниги: book.id,
-      Название: book.title,
-      Описание: book.description || '',
-      ГодИздания: book.year || '',
-      ISBN: book.isbn || '',
-      Статус: book.status || 'Доступна',
-      Категория: book.categories && book.categories.length > 0 ? book.categories[0].id : '',
-      Автор: book.author || ''
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      year: book.year,
+      isbn: book.isbn,
+      status: book.status,
+      category: book.categories?.[0] || book.category,
+      categoryId: book.categoryId || book.categories?.[0]?.id,
+      description: book.description
     };
+    
     console.log('Editing book data:', bookData);
-    setEditBook(bookData);
+    
+    // Ensure we have all necessary fields for editing
+    const bookToEdit = {
+      ...bookData,
+      КодКниги: bookData.id,
+      Название: bookData.title,
+      Автор: bookData.author,
+      ГодИздания: bookData.year,
+      ISBN: bookData.isbn,
+      Статус: bookData.status || 'Доступна',
+      categoryId: bookData.categoryId || bookData.category?.id || bookData.category
+    };
+    
+    setEditBook(bookToEdit);
     setIsEditModalOpen(true);
   };
 
   const handleDelete = async () => {
     if (!bookToDelete) return;
 
+    // Use either id or КодКниги, whichever is available
+    const bookId = bookToDelete.id || bookToDelete.КодКниги;
+    
+    if (!bookId) {
+      console.error('Не удалось определить ID книги для удаления:', bookToDelete);
+      toast.error('Ошибка: не удалось определить ID книги');
+      return;
+    }
+
     try {
-      await axios.delete(`/api/books/${bookToDelete.КодКниги}`);
+      console.log('Удаление книги с ID:', bookId);
+      await axios.delete(`/api/books/${bookId}`);
       toast.success('Книга успешно удалена');
-      setBooks(books.filter(book => book.КодКниги !== bookToDelete.КодКниги));
-      setFilteredBooks(filteredBooks.filter(book => book.КодКниги !== bookToDelete.КодКниги));
+      
+      // Update both books and filteredBooks state
+      setBooks(prevBooks => prevBooks.filter(book => (book.id || book.КодКниги) !== bookId));
+      setFilteredBooks(prevFiltered => prevFiltered.filter(book => (book.id || book.КодКниги) !== bookId));
     } catch (error) {
       console.error('Ошибка при удалении книги:', error);
-      toast.error('Ошибка при удалении книги');
+      toast.error(`Ошибка при удалении книги: ${error.response?.data?.message || error.message}`);
     } finally {
       setDeleteModalOpen(false);
       setBookToDelete(null);
@@ -303,21 +323,7 @@ const AdminBooksPage = () => {
     }
   };
 
-  // Map sort field names to match the actual book object properties
-  const getSortField = (book, field) => {
-    const fieldMap = {
-      'title': 'title',
-      'author': 'author',
-      'description': 'description',
-      'year': 'year',
-      'isbn': 'isbn',
-      'categoryName': 'categoryName',
-      'status': 'status'
-    };
-    
-    const actualField = fieldMap[field] || field;
-    return book[actualField] || '';
-  };
+
 
   // Добавляем название категории к каждой книге и убираем дубликаты
   const booksWithCategoryNames = React.useMemo(() => {
@@ -355,18 +361,42 @@ const AdminBooksPage = () => {
       })
       .map(book => ({
         ...book,
-        categoryName: categories.find(cat => cat.КодКатегории === book.categoryId)?.Название || book.categoryName
+        categoryName: categories.find(cat => cat.КодКатегории === book.categoryId)?.Название || book.categoryName || '',
+        // Ensure all sortable fields have string values
+        title: book.title || '',
+        author: book.author || '',
+        year: book.year ? String(book.year) : '',
+        status: book.status || '',
+        isbn: book.isbn || ''
       }));
 
-    return uniqueBooks.sort((a, b) => {
-      const direction = sortDirection === 'asc' ? 1 : -1;
-      const fieldA = getSortField(a, sortField);
-      const fieldB = getSortField(b, sortField);
+    console.log('Sorting by:', sortField, 'direction:', sortDirection);
+    console.log('Sample book data:', uniqueBooks[0]);
 
-      if (fieldA < fieldB) return -1 * direction;
-      if (fieldA > fieldB) return 1 * direction;
+    const sorted = [...uniqueBooks].sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      const fieldMap = {
+        'Название': 'title',
+        'Автор': 'author',
+        'Год': 'year',
+        'Статус': 'status',
+        'Категория': 'categoryName',
+        'ISBN': 'isbn'
+      };
+      
+      const field = fieldMap[sortField] || sortField;
+      const valueA = String(a[field] || '').toLowerCase().trim();
+      const valueB = String(b[field] || '').toLowerCase().trim();
+      
+      console.log(`Comparing ${valueA} and ${valueB} for field ${field}`);
+      
+      if (valueA < valueB) return -1 * direction;
+      if (valueA > valueB) return 1 * direction;
       return 0;
     });
+
+    console.log('Sorted result:', sorted);
+    return sorted;
   }, [filteredBooks, sortDirection, sortField, categories]);
 
   return (
@@ -393,52 +423,78 @@ const AdminBooksPage = () => {
       {!isLoading ? (
         <div>
           <p>Отображаемые книги: {filteredBooks.length}</p>
-          <p>Сортировка по: {sortField} ({sortDirection})</p>
+          <p>Сортировка по: {sortField} ({sortDirection === 'asc' ? 'А-Я' : 'Я-А'})</p>
           <BooksTable>
             <thead>
               <tr>
-                <TableHeader onClick={() => handleSort('title')}>
-                  Название
-                  {sortField === 'title' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
+                <TableHeader 
+                  onClick={() => handleSort('Название')}
+                  title="Сортировать по названию"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {sortField === 'Название' 
+                    ? sortDirection === 'asc' 
+                      ? 'Название (А-Я)' 
+                      : 'Название (Я-А)'
+                    : 'Название'}
                 </TableHeader>
-                <TableHeader onClick={() => handleSort('author')}>
-                  Автор
-                  {sortField === 'author' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
+                <TableHeader 
+                  onClick={() => handleSort('Автор')}
+                  title="Сортировать по автору"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {sortField === 'Автор' 
+                    ? sortDirection === 'asc' 
+                      ? 'Автор (А-Я)' 
+                      : 'Автор (Я-А)'
+                    : 'Автор'}
                 </TableHeader>
-                <TableHeader onClick={() => handleSort('category')}>
-                  Категория
-                  {sortField === 'category' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
+                <TableHeader 
+                  onClick={() => handleSort('Категория')}
+                  title="Сортировать по категории"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {sortField === 'Категория' 
+                    ? sortDirection === 'asc' 
+                      ? 'Категория (А-Я)' 
+                      : 'Категория (Я-А)'
+                    : 'Категория'}
                 </TableHeader>
-                <TableHeader onClick={() => handleSort('year')}>
-                  Год
-                  {sortField === 'year' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
+                <TableHeader 
+                  onClick={() => handleSort('Год')}
+                  title="Сортировать по году издания"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {sortField === 'Год' 
+                    ? sortDirection === 'asc' 
+                      ? 'Год (по возрастанию)' 
+                      : 'Год (по убыванию)'
+                    : 'Год'}
                 </TableHeader>
-                <TableHeader onClick={() => handleSort('isbn')}>
+                <TableHeader 
+                  onClick={() => handleSort('ISBN')}
+                  title="Сортировать по ISBN"
+                  style={{ cursor: 'pointer' }}
+                >
                   ISBN
-                  {sortField === 'isbn' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
                 </TableHeader>
-                <TableHeader onClick={() => handleSort('status')}>
-                  Статус
-                  {sortField === 'status' && (
-                    sortDirection === 'asc' ? '↑' : '↓'
-                  )}
+                <TableHeader 
+                  onClick={() => handleSort('Статус')}
+                  title="Сортировать по статусу"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {sortField === 'Статус' 
+                    ? sortDirection === 'asc' 
+                      ? 'Статус (А-Я)' 
+                      : 'Статус (Я-А)'
+                    : 'Статус'}
                 </TableHeader>
                 <th>Действия</th>
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(filteredBooks) && filteredBooks.length > 0 ? (
-                filteredBooks.map((book, index) => (
+              {Array.isArray(sortedBooks) && sortedBooks.length > 0 ? (
+                sortedBooks.map((book, index) => (
                   <tr key={book.id || `book-${index}`}>
                     <td>{book.title || '—'}</td>
                     <td>{book.author || '—'}</td>

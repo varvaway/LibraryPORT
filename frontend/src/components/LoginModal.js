@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import axios from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -148,8 +149,16 @@ const LoginModal = ({ isOpen, onClose, theme }) => {
 
     } catch (error) {
       console.error('Ошибка при входе:', error);
-      const errorMessage = error.response?.data?.message || 'Ошибка входа. Проверьте введенные данные.';
-      alert(errorMessage);
+      const message = error.response?.data?.message;
+      
+      if (message === 'Неверный пароль') {
+        toast.error('Неверный пароль. Пожалуйста, проверьте введенные данные.');
+      } else if (message === 'Пользователь не найден') {
+        toast.error('Пользователь с такими именем и фамилией не найден.');
+      } else {
+        const errorMessage = error.response?.data?.message || 'Произошла ошибка при входе. Пожалуйста, попробуйте снова.';
+        toast.error(errorMessage);
+      }
     }
   };
 

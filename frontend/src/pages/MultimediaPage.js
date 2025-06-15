@@ -57,7 +57,7 @@ const ResourceLink = styled.a`
 
 const ResourcesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(${props => props.$isReader || !props.$isAdmin ? '2' : 'auto-fill'}, minmax(300px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 `;
@@ -369,7 +369,7 @@ const MultimediaPage = () => {
           </tbody>
         </ResourcesTable>
       ) : (
-        <ResourcesGrid>
+        <ResourcesGrid $isReader={isReader} $isAdmin={isAdmin}>
           {filteredResources.map((resource) => (
             <ResourceCard key={resource.id} onClick={() => window.open(resource.url, '_blank')}>
               <h3>{resource.title}</h3>

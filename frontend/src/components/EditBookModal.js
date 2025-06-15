@@ -89,23 +89,10 @@ const EditBookModal = ({ isOpen, onClose, onSave, book, categories = [], statusO
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Debug categories when they change
-  useEffect(() => {
-    console.log('Categories in EditBookModal:', categories);
-    if (categories && categories.length > 0) {
-      console.log('First category sample:', categories[0]);
-      console.log('Category fields:', Object.keys(categories[0]));
-    }
-  }, [categories]);
-
+  // Update form data when book prop changes
   useEffect(() => {
     if (book) {
       console.log('Editing book:', book);
-      console.log('Available categories:', categories);
-      
-      const categoryId = book.Категория?.КодКатегории || book.categoryId || '';
-      console.log('Selected category ID:', categoryId);
-      
       setFormData({
         КодКниги: book.КодКниги || book.id || '',
         Название: book.Название || book.title || '',
@@ -113,10 +100,11 @@ const EditBookModal = ({ isOpen, onClose, onSave, book, categories = [], statusO
         ГодИздания: book.ГодИздания || book.year || '',
         ISBN: book.ISBN || book.isbn || '',
         Описание: book.Описание || book.description || '',
-        Категория: categoryId,
+        Категория: book.Категория?.КодКатегории || book.categoryId || book.category?.id || '',
         Статус: book.Статус || book.status || 'Доступна'
       });
     } else {
+      // Reset form for new book
       setFormData({
         КодКниги: '',
         Название: '',
@@ -129,6 +117,15 @@ const EditBookModal = ({ isOpen, onClose, onSave, book, categories = [], statusO
       });
     }
   }, [book]);
+
+  // Debug categories when they change
+  useEffect(() => {
+    console.log('Categories in EditBookModal:', categories);
+    if (categories && categories.length > 0) {
+      console.log('First category sample:', categories[0]);
+      console.log('Category fields:', Object.keys(categories[0]));
+    }
+  }, [categories]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -147,7 +144,7 @@ const EditBookModal = ({ isOpen, onClose, onSave, book, categories = [], statusO
   return (
     <Modal isOpen={isOpen}>
       <ModalContent>
-        <h2>{book ? 'Редактирование книги' : 'Добавление книги'}</h2>
+        <h2>{book ? 'Редактирование книги' : 'Создание новой книги'}</h2>
         <Form onSubmit={handleSubmit}>
           <FormGroup>
             <label>Название</label>
